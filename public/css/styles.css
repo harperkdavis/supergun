@@ -3,3 +3,10 @@ body {
     margin: 0;
     font-family: 'Syne Mono', sans-serif;
 }
+
+#crosshair {
+    position: absolute;
+    image-rendering: pixelated;
+    top: calc(50% - 16px);
+    left: calc(50% - 16px);
+}
