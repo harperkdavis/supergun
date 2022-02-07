@@ -38,7 +38,8 @@ let storage = {
 
 let localPlayerState = {
     position: {x: 0, y: 12, z: 0},
-    velocity: {x: 0, y: 0, z: 0}
+    velocity: {x: 0, y: 0, z: 0},
+    canJump: true,
 };
 
 let localInputState = {
@@ -91,6 +92,23 @@ let map = [
         ['. ', '. ', '. ', '* ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '* ', '. ', '. ', '. '],
         ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '* ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
         ['. ', '. ', '. ', '* ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '* ', '. ', '. ', '. '],
+        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
+        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
+        ['. ', '. ', '. ', '. ', '. ', '. ', '* ', '. ', '* ', '. ', '. ', '. ', '. ', '. ', '. '],
+        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
+        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
+        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
+    ],
+    [
+        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
+        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
+        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
+        ['. ', '. ', '. ', '. ', '. ', '. ', '* ', '. ', '* ', '. ', '. ', '. ', '. ', '. ', '. '],
+        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
+        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
+        ['. ', '. ', '. ', '* ', '. ', '. ', '* ', '. ', '* ', '. ', '. ', '* ', '. ', '. ', '. '],
+        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
+        ['. ', '. ', '. ', '* ', '. ', '. ', '* ', '. ', '* ', '. ', '. ', '* ', '. ', '. ', '. '],
         ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
         ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
         ['. ', '. ', '. ', '. ', '. ', '. ', '* ', '. ', '* ', '. ', '. ', '. ', '. ', '. ', '. '],
@@ -262,33 +280,72 @@ function processMovement(inputs, prevInputs, rotation) {
         localPlayerState.velocity.x += Math.sin(rotation.y + Math.PI) * 0.01;
         localPlayerState.velocity.z += Math.cos(rotation.y + Math.PI) * 0.01;
     }
-    if (!prevInputs.includes('Space') && inputs.includes('Space')) {
-        localPlayerState.velocity.y = 0.3;
+    if (inputs.includes('Space') && localPlayerState.canJump) {
+        localPlayerState.velocity.y = 0.15;
+        localPlayerState.canJump = false;
     }
     localPlayerState.velocity.x /= 1.1;
     localPlayerState.velocity.z /= 1.1;
 
-    localPlayerState.velocity.y -= 0.002;
+    localPlayerState.velocity.y -= 0.0015;
 
-    for (let x = Math.floor(localPlayerState.position.x % 16 - 1); x <= Math.floor(localPlayerState.position.x % 16 + 1); x++) {
-        for (let z = Math.floor(localPlayerState.position.x % 16 - 1); z <= Math.floor(localPlayerState.position.x % 16 + 1); z++) {
-            for (let y = Math.floor(localPlayerState.position.x % 12 - 1); y <= Math.floor(localPlayerState.position.x % 12 + 1); y++) {
+    let oldPos = {x: localPlayerState.position.x, y: localPlayerState.position.y, z: localPlayerState.position.z};
+    let newPos = {x: localPlayerState.position.x + localPlayerState.velocity.x,
+        y: localPlayerState.position.y + localPlayerState.velocity.y,
+        z: localPlayerState.position.z + localPlayerState.velocity.z};
+    for (let x = Math.floor(newPos.x / 16) - 1; x <= Math.floor(newPos.x / 16) + 1; x++) {
+        for (let z = Math.floor(newPos.z / 16) - 1; z <= Math.floor(newPos.z / 16) + 1; z++) {
+            for (let y = Math.floor(newPos.y / 12) - 1; y <= Math.floor(newPos.y / 12) + 1; y++) {
                 if (y >= 0 && y < map.length && isWithin(x, z, 0, 0, 14, 14)) {
                     let mapBox = map[y][x][z];
-                    
+                    if (mapBox[0] === '*') {
+                        if (newPos.y + 2 >= y * 12 && newPos.y + 0.01 < y * 12 + 12 && isWithin(newPos.x, newPos.z, x * 16 - 0.5, z * 16 - 0.5, (x + 1) * 16 + 0.5, (z + 1) * 16 + 0.5)) {
+                            let northIntersect = calculateIntersection(oldPos.x, oldPos.z, newPos.x, newPos.z, x * 16 - 0.5, z * 16 - 0.5, x * 16 + 16 + 0.5, z * 16 - 0.5);
+                            if (northIntersect !== false) {
+                                newPos.z = northIntersect.y;
+                                localPlayerState.canJump = true;
+                            } else {
+                                let southIntersect = calculateIntersection(oldPos.x, oldPos.z, newPos.x, newPos.z, x * 16 - 0.5, z * 16 + 16.5, x * 16 + 16 + 0.5, z * 16 + 16.5);
+                                if (southIntersect !== false) {
+                                    newPos.z = southIntersect.y;
+                                    localPlayerState.canJump = true;
+                                } else {
+                                    let westIntersect = calculateIntersection(oldPos.x, oldPos.z, newPos.x, newPos.z, x * 16 - 0.5, z * 16 - 0.5, x * 16 - 0.5, z * 16 + 16.5);
+                                    if (westIntersect !== false) {
+                                        newPos.x = westIntersect.x;
+                                        localPlayerState.canJump = true;
+                                    } else {
+                                        let eastIntersect = calculateIntersection(oldPos.x, oldPos.z, newPos.x, newPos.z, x * 16 + 16.5, z * 16 - 0.5, x * 16 + 16.5, z * 16 + 16.5);
+                                        if (eastIntersect !== false) {
+                                            newPos.x = eastIntersect.x;
+                                            localPlayerState.canJump = true;
+                                        } else { // Top / Bottom
+                                            if (isWithin(newPos.x, newPos.z, x * 16, z * 16, (x + 1) * 16, (z + 1) * 16)) {
+                                                if (newPos.y < oldPos.y && newPos.y < y * 12 + 12) {
+                                                    newPos.y = y * 12 + 12;
+                                                    localPlayerState.velocity.y = 0;
+                                                    localPlayerState.canJump = true;
+                                                } else if (newPos.y + 2 > y * 12 && newPos.y < y * 12 + 6) {
+                                                    newPos.y = y * 12 - 2;
+                                                    localPlayerState.velocity.y = 0;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
     }
     
-    localPlayerState.position.x += localPlayerState.velocity.x;
-    localPlayerState.position.y += localPlayerState.velocity.y;
-    localPlayerState.position.z += localPlayerState.velocity.z;
+    localPlayerState.position.x = newPos.x;
+    localPlayerState.position.y = newPos.y;
+    localPlayerState.position.z = newPos.z;
 
-    if (localPlayerState.position.y < 12) {
-        localPlayerState.position.y = 12;
-        localPlayerState.velocity.y = 0;
-    }
+    document.getElementById('test').innerHTML = "Position: " + newPos.x + ", " + newPos.y + ", " + newPos.z;
 
 }
 
@@ -306,33 +363,39 @@ function isWithin(x, y, x1, y1, x2, y2) {
 }
 
 
-// https://dirask.com/posts/JavaScript-how-to-calculate-intersection-point-of-two-lines-for-given-4-points-VjvnAj
-function calculateIntersection(p1, p2, p3, p4) {
-	
-    // down part of intersection point formula
-    let d1 = (p1.x - p2.x) * (p3.y - p4.y); // (x1 - x2) * (y3 - y4)
-    let d2 = (p1.y - p2.y) * (p3.x - p4.x); // (y1 - y2) * (x3 - x4)
-    let d  = (d1) - (d2);
-
-    if(d === 0) {
-      return undefined;
+// https://gist.github.com/gordonwoodhull/50eb65d2f048789f9558
+const eps = 0.0000001;
+function between(a, b, c) {
+    return a - eps <= b && b <= c + eps;
+}
+function calculateIntersection(x1,y1,x2,y2, x3,y3,x4,y4) {
+    let x=((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4)) /
+        ((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
+    let y=((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4)) /
+        ((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
+    if (isNaN(x) || isNaN(y)) {
+        return false;
+    } else {
+        if (x1>=x2) {
+            if (!between(x2, x, x1)) {return false;}
+        } else {
+            if (!between(x1, x, x2)) {return false;}
+        }
+        if (y1>=y2) {
+            if (!between(y2, y, y1)) {return false;}
+        } else {
+            if (!between(y1, y, y2)) {return false;}
+        }
+        if (x3>=x4) {
+            if (!between(x4, x, x3)) {return false;}
+        } else {
+            if (!between(x3, x, x4)) {return false;}
+        }
+        if (y3>=y4) {
+            if (!between(y4, y, y3)) {return false;}
+        } else {
+            if (!between(y3, y, y4)) {return false;}
+        }
     }
-
-    // upper part of intersection point formula
-    let u1 = (p1.x * p2.y - p1.y * p2.x); // (x1 * y2 - y1 * x2)
-    let u4 = (p3.x * p4.y - p3.y * p4.x); // (x3 * y4 - y3 * x4)
-
-    let u2x = p3.x - p4.x; // (x3 - x4)
-    let u3x = p1.x - p2.x; // (x1 - x2)
-    let u2y = p3.y - p4.y; // (y3 - y4)
-    let u3y = p1.y - p2.y; // (y1 - y2)
-
-    // intersection point formula
-
-    let px = (u1 * u2x - u3x * u4) / d;
-    let py = (u1 * u2y - u3y * u4) / d;
-
-    let p = { x: px, y: py };
-
-    return p;
+    return {x: x, y: y};
 }
