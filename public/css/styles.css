@@ -4,15 +4,76 @@ body {
     font-family: 'Syne Mono', sans-serif;
 }
 
+#ui {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+#mainMenu {
+    position: static;
+    display: inline-block;
+}
+
+#menuPanel {
+    width: 40%;
+    height: 80%;
+
+    backdrop-filter: blur(20px) contrast(50%) brightness(140%);
+
+    border-style: solid;
+    border-width: 2px;
+    border-color: #000;
+
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+
+    text-align: center;
+}
+
+.gameTitle {
+    font-size: 64px;
+}
+.lowSpace {
+    font-size: 12pt;
+    line-height: 14pt;
+}
+
+.bigField {
+    width: 50%;
+    font-size: 12pt;
+    margin-bottom: 20px;
+    font-family: 'Syne Mono', sans-serif;
+}
+
+.bigSlider {
+    width: 50%;
+}
+
+button {
+    font-size: 12pt;
+    font-family: 'Syne Mono', sans-serif;
+}
+
+#joinButton {
+    padding: 5px 20px;
+}
+
+.menuItem {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#inGame {
+    position: static;
+    display: inline-block;
+}
+
 #crosshair {
     position: absolute;
     image-rendering: pixelated;
     top: calc(50% - 16px);
     left: calc(50% - 16px);
-}
-
-#test {
-    position: absolute;
-    top: 50px;
-    left: 50px;
 }

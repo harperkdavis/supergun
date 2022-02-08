@@ -36,6 +36,14 @@ let storage = {
     }
 }
 
+let localWorldState = {
+    spawnPoints: [],
+    supergunPosition: [],
+    players: {
+
+    }
+}
+
 let localPlayerState = {
     position: {x: 0, y: 12, z: 0},
     velocity: {x: 0, y: 0, z: 0},
@@ -49,12 +57,17 @@ let localInputState = {
 };
 
 let game = {
-    camera: undefined,
+    gameCamera: undefined,
+    orbitCamera: undefined,
     scene: undefined,
     renderer: undefined,
     
     mouseLocked: false,
-    mapLevel: []
+    inGame: false,
+    map: [],
+    mapLevel: [],
+
+    username: "nathan_is_short",
 }
 
 let assets = {
@@ -64,70 +77,34 @@ let assets = {
     }
 };
 
-let map = [
-    [
-        ['* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* '],
-        ['* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* '],
-        ['* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* '],
-        ['* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* '],
-        ['* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* '],
-        ['* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* '],
-        ['* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* '],
-        ['* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* '],
-        ['* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* '],
-        ['* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* '],
-        ['* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* '],
-        ['* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* '],
-        ['* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* '],
-        ['* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* '],
-        ['* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* ', '* '],
-    ],
-    [
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '* ', '. ', '* ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '* ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '* ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '* ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '* ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '* ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '* ', '. ', '* ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-    ],
-    [
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '* ', '. ', '* ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '* ', '. ', '. ', '* ', '. ', '* ', '. ', '. ', '* ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '* ', '. ', '. ', '* ', '. ', '* ', '. ', '. ', '* ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '* ', '. ', '* ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-        ['. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. ', '. '],
-    ],
-];
+let SERVER_IP = "http://localhost:8000";
+const socket = io(SERVER_IP);
+
+$('#joinButton').click(function () {
+    game.username = $('#usernameField').val();
+    if (game.username === '') {
+        game.username = 'stinkyguy';
+    } else if (game.username.length > 32) {
+        game.username = game.username.substring(0, 31);
+    }
+
+    socket.emit('register', {username: game.username});
+});
+
+socket.on("register_accept", (data) => {
+    game.inGame = true;
+});
 
 init();
 
-function init() {
+async function init() {
 
-	game.camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 1000);
-    game.camera.up.set(0, 1, 0);
+	game.gameCamera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 1000);
+    game.orbitCamera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 1000);
     
 	game.scene = new THREE.Scene();
 
-    loadMap();
+    await loadMap();
     
 
     // Lighting
@@ -155,31 +132,53 @@ function init() {
 
     document.addEventListener('pointerlockchange', mouseLocked, false);
 
-    setInterval(function () { 
-        processMovement(localInputState.inputs, localInputState.prevInputs, localInputState.rotation); 
+    setInterval(function () {
+        if (game.inGame) {
+            processMovement(localInputState.inputs, localInputState.prevInputs, localInputState.rotation);
+        }
         localInputState.prevInputs = localInputState.inputs;
     }, 5);
 
 }
 
-function loadMap() {
+async function loadMap() {
+    await fetch(SERVER_IP + "/map")
+        .then(res => res.json())
+        .then(json => game.map = json);
+
     let geometry = new THREE.BoxGeometry(16, 12, 16);
+    let bridgeGeometry = new THREE.BoxGeometry(16, 2, 16);
+    let bouncerGeometry = new THREE.CylinderGeometry(4, 4, 2);
+
 	let lightMaterial = new THREE.MeshLambertMaterial({color: 0xeeeeeee});
     let darkMaterial = new THREE.MeshLambertMaterial({color: 0xaaaaaaa});
 
-    for (let y = 0; y < map.length; y++) {
+    let bouncerMaterial = new THREE.MeshLambertMaterial({color: 0xe0119f});
+
+    for (let y = 0; y < game.map.length; y++) {
         for (let x = 0; x < 15; x++) {
             for (let z = 0; z < 15; z++) {
-                let currentTile = map[y][x][z];
+                let currentTile = game.map[y][x][z];
                 let mapBox;
+
                 if (currentTile[0] === '*') { // Regular Wall
                     mapBox = new THREE.Mesh(geometry, (x + y + z) % 2 === 0 ? lightMaterial : darkMaterial);
+                } else if (currentTile[0] === '_') { // Bridge
+                    mapBox = new THREE.Mesh(bridgeGeometry, (x + y + z) % 2 === 0 ? lightMaterial : darkMaterial);
+                } else if (currentTile[0] === 'I') {
+                    mapBox = new THREE.Mesh(bouncerGeometry, bouncerMaterial);
                 }
 
                 if (currentTile[0] !== '.') {
 
                     mapBox.position.x = x * 16 + 8;
-                    mapBox.position.y = y * 12 + 6;
+                    if (currentTile[0] === '_') {
+                        mapBox.position.y = y * 12 + 12;
+                    } else if (currentTile[0] === 'I') {
+                        mapBox.position.y = y * 12 + 1;
+                    } else if (currentTile[0] === '*') {
+                        mapBox.position.y = y * 12 + 7;
+                    }
                     mapBox.position.z = z * 16 + 8;
                 
                     game.scene.add(mapBox);
@@ -196,7 +195,7 @@ function setPrevInputs() {
 
 function mousePressed(event) {
     setPrevInputs();
-    if (!game.mouseLocked) {
+    if (!game.mouseLocked && game.inGame) {
         game.renderer.domElement.requestPointerLock();
     }
     if (!localInputState.inputs.includes('Mouse' + event.button)) localInputState.inputs.push('Mouse' + event.button);
@@ -240,8 +239,10 @@ function keyReleased(event) {
 
 function onWindowResize() {
 
-    game.camera.aspect = window.innerWidth / window.innerHeight;
-    game.camera.updateProjectionMatrix();
+    game.gameCamera.aspect = window.innerWidth / window.innerHeight;
+    game.gameCamera.updateProjectionMatrix();
+    game.orbitCamera.aspect = window.innerWidth / window.innerHeight;
+    game.orbitCamera.updateProjectionMatrix();
 
     game.renderer.setSize(window.innerWidth, window.innerHeight);
 
@@ -257,9 +258,27 @@ function update(time) {
     let position = localPlayerState.position;
     let rotation = localInputState.rotation;
 
-    game.camera.position.set(position.x, position.y + 2, position.z);
-    game.camera.lookAt(position.x + Math.sin(rotation.y) * Math.cos(rotation.x), position.y + 2 + Math.sin(rotation.x), position.z + Math.cos(rotation.y) * Math.cos(rotation.x));
-    game.camera.up.set(0, 1, 0);
+    if (game.inGame) {
+        game.gameCamera.position.set(position.x, position.y + 4, position.z);
+        game.gameCamera.lookAt(position.x + Math.sin(rotation.y) * Math.cos(rotation.x), position.y + 4 + Math.sin(rotation.x), position.z + Math.cos(rotation.y) * Math.cos(rotation.x));
+
+        $('#inGame').css('display', 'inline-block');
+        $('#mainMenu').css('display', 'none');
+    } else {
+        game.orbitCamera.position.set(Math.sin(time * 0.0001) * 140 + 120, 50, Math.cos(time * 0.0001) * 140 + 120);
+        game.orbitCamera.lookAt(120, 40, 120);
+
+        $('#inGame').css('display', 'none');
+        $('#mainMenu').css('display', 'inline-block');
+
+        storage.localSettings.sensitivity = Math.pow($('#sensSlider').val(), 3);
+        let sens = storage.localSettings.sensitivity.toLocaleString(
+            undefined,
+            {minimumFractionDigits: 2, maximumFractionDigits: 2}
+        );
+        $('#sensValue').text('Sensitivity (' + sens  + ')')
+    }
+
 }
 
 function processMovement(inputs, prevInputs, rotation) {
@@ -296,10 +315,12 @@ function processMovement(inputs, prevInputs, rotation) {
     for (let x = Math.floor(newPos.x / 16) - 1; x <= Math.floor(newPos.x / 16) + 1; x++) {
         for (let z = Math.floor(newPos.z / 16) - 1; z <= Math.floor(newPos.z / 16) + 1; z++) {
             for (let y = Math.floor(newPos.y / 12) - 1; y <= Math.floor(newPos.y / 12) + 1; y++) {
-                if (y >= 0 && y < map.length && isWithin(x, z, 0, 0, 14, 14)) {
-                    let mapBox = map[y][x][z];
+                if (y >= 0 && y < game.map.length && isWithin(x, z, 0, 0, 14, 14)) {
+                    let mapBox = game.map[y][x][z];
+
                     if (mapBox[0] === '*') {
-                        if (newPos.y + 2 >= y * 12 && newPos.y + 0.01 < y * 12 + 12 && isWithin(newPos.x, newPos.z, x * 16 - 0.5, z * 16 - 0.5, (x + 1) * 16 + 0.5, (z + 1) * 16 + 0.5)) {
+
+                        if (newPos.y + 4 >= y * 12 && newPos.y + 0.01 < y * 12 + 12 && isWithin(newPos.x, newPos.z, x * 16 - 0.5, z * 16 - 0.5, (x + 1) * 16 + 0.5, (z + 1) * 16 + 0.5)) {
                             let northIntersect = calculateIntersection(oldPos.x, oldPos.z, newPos.x, newPos.z, x * 16 - 0.5, z * 16 - 0.5, x * 16 + 16 + 0.5, z * 16 - 0.5);
                             if (northIntersect !== false) {
                                 newPos.z = northIntersect.y;
@@ -325,7 +346,7 @@ function processMovement(inputs, prevInputs, rotation) {
                                                     newPos.y = y * 12 + 12;
                                                     localPlayerState.velocity.y = 0;
                                                     localPlayerState.canJump = true;
-                                                } else if (newPos.y + 2 > y * 12 && newPos.y < y * 12 + 6) {
+                                                } else if (newPos.y + 4 > y * 12 && newPos.y < y * 12 + 6) {
                                                     newPos.y = y * 12 - 2;
                                                     localPlayerState.velocity.y = 0;
                                                 }
@@ -335,7 +356,52 @@ function processMovement(inputs, prevInputs, rotation) {
                                 }
                             }
                         }
+
+                    } else if (mapBox[0] === '_') {
+
+                        if (newPos.y + 4 >= y * 12 + 10 && newPos.y + 0.01 < y * 12 + 12 && isWithin(newPos.x, newPos.z, x * 16 - 0.5, z * 16 - 0.5, (x + 1) * 16 + 0.5, (z + 1) * 16 + 0.5)) {
+                            let northIntersect = calculateIntersection(oldPos.x, oldPos.z, newPos.x, newPos.z, x * 16 - 0.5, z * 16 - 0.5, x * 16 + 16 + 0.5, z * 16 - 0.5);
+                            if (northIntersect !== false) {
+                                newPos.z = northIntersect.y;
+                                localPlayerState.canJump = true;
+                            } else {
+                                let southIntersect = calculateIntersection(oldPos.x, oldPos.z, newPos.x, newPos.z, x * 16 - 0.5, z * 16 + 16.5, x * 16 + 16 + 0.5, z * 16 + 16.5);
+                                if (southIntersect !== false) {
+                                    newPos.z = southIntersect.y;
+                                    localPlayerState.canJump = true;
+                                } else {
+                                    let westIntersect = calculateIntersection(oldPos.x, oldPos.z, newPos.x, newPos.z, x * 16 - 0.5, z * 16 - 0.5, x * 16 - 0.5, z * 16 + 16.5);
+                                    if (westIntersect !== false) {
+                                        newPos.x = westIntersect.x;
+                                        localPlayerState.canJump = true;
+                                    } else {
+                                        let eastIntersect = calculateIntersection(oldPos.x, oldPos.z, newPos.x, newPos.z, x * 16 + 16.5, z * 16 - 0.5, x * 16 + 16.5, z * 16 + 16.5);
+                                        if (eastIntersect !== false) {
+                                            newPos.x = eastIntersect.x;
+                                            localPlayerState.canJump = true;
+                                        } else { // Top / Bottom
+                                            if (isWithin(newPos.x, newPos.z, x * 16, z * 16, (x + 1) * 16, (z + 1) * 16)) {
+                                                if (newPos.y < oldPos.y && newPos.y < y * 12 + 12) {
+                                                    newPos.y = y * 12 + 12;
+                                                    localPlayerState.velocity.y = 0;
+                                                    localPlayerState.canJump = true;
+                                                } else if (newPos.y + 4 > y * 12 + 10 && newPos.y < y * 12 + 11) {
+                                                    newPos.y = y * 12 + 6;
+                                                    localPlayerState.velocity.y = 0;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                    } else if (mapBox[0] === 'I') {
+                        if (Math.pow(newPos.x - (x * 16 + 8), 2) + Math.pow(newPos.y - (y * 12), 2) + Math.pow(newPos.z - (z * 16 + 8), 2) <= 20) {
+                            localPlayerState.velocity.y = 0.3;
+                        }
                     }
+
                 }
             }
         }
@@ -345,15 +411,13 @@ function processMovement(inputs, prevInputs, rotation) {
     localPlayerState.position.y = newPos.y;
     localPlayerState.position.z = newPos.z;
 
-    document.getElementById('test').innerHTML = "Position: " + newPos.x + ", " + newPos.y + ", " + newPos.z;
-
 }
 
 function draw(time) {
     update(time);
     
 
-	game.renderer.render(game.scene, game.camera);
+	game.renderer.render(game.scene, game.inGame ? game.gameCamera : game.orbitCamera);
 
     prevTime = time;
 }

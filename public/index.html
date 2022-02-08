@@ -24,8 +24,35 @@
 
     </head>
     <body>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+        <script src="https://cdn.socket.io/4.4.1/socket.io.min.js" integrity="sha384-fKnu0iswBIqkjxrhQCTZ7qlLHOFEgNkRmK2vaO/LbTZSXdJfAu6ewRBdwHPhBo/H" crossorigin="anonymous"></script>
         <script src="js/sketch.js" type="module"></script>
-        <img src="assets/images/crosshair.png" id="crosshair">
-        <h1 id="test">TEST</h1>
+
+        <div id="ui">
+            <div id="mainMenu">
+                <div id="menuPanel">
+                    <p class="gameTitle">supergun</p>
+                    <p class="lowSpace">Enter Username:</p>
+                    <label>
+                        <input type="text" value="nathan_is_short" class="menuItem bigField" id="usernameField">
+                    </label>
+                    <br>
+                    <button id="joinButton">Join Game</button>
+                    <p>Controls: WASD - Move, Mouse - Shoot</p>
+                    <br>
+                    <h3>Settings:</h3>
+                    <label>
+                        <p id="sensValue">Sensitivity (1.00)</p>
+                        <input type="range" min=0 max=2 value=1 step="0.01" class="menuItem bigSlider" id="sensSlider">
+                    </label>
+
+                </div>
+
+            </div>
+            <div id="inGame">
+                <img src="assets/images/crosshair.png" id="crosshair">
+            </div>
+        </div>
+
     </body>
 </html>
