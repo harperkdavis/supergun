@@ -77,8 +77,8 @@ let assets = {
     }
 };
 
-let SERVER_IP = "http://localhost:8000";
-const socket = io(SERVER_IP);
+let SERVER_IP = "https://supergun.herokuapp.com";
+const socket = io();
 
 $('#joinButton').click(function () {
     game.username = $('#usernameField').val();
