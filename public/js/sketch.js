@@ -30,6 +30,9 @@ YSS'      YSSP~YSSY    S*S           YSSP  S*S    SSS    Y~YSSY    YSSP~YSSY    
 
 import * as THREE from 'https://cdn.skypack.dev/three';
 
+let SERVER_IP = "https://supergun.herokuapp.com";
+const socket = io(SERVER_IP);
+
 let storage = {
     localSettings: {
         sensitivity: 1
@@ -57,7 +60,6 @@ let localInputState = {
 };
 
 let clientData = {
-    inputCache: {},
     tick: 0
 }
 
@@ -86,9 +88,6 @@ let assets = {
     }
 };
 
-let SERVER_IP = "https://supergun.herokuapp.com";
-const socket = io(SERVER_IP);
-
 $('#joinButton').click(function () {
     game.username = $('#usernameField').val();
     if (game.username === '') {
@@ -103,8 +102,8 @@ $('#joinButton').click(function () {
 socket.on("register_accept", (data) => {
     game.inGame = true;
     localInputState.rotation = {x: 0, y: 0};
-    clientData.tick = data.tick + Math.floor((Date.now() - data.stamp) / 5);
-    game.movementInterval = setInterval(handleSubtick, 5);
+    clientData.tick = data.tick + Math.floor((Date.now() - data.stamp) / 10);
+    game.movementInterval = setInterval(handleTick, 10);
 });
 
 socket.on("player_add", (data) => {
@@ -112,7 +111,7 @@ socket.on("player_add", (data) => {
         data.added.forEach(player => {
             let textGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
             let headGeometry = new THREE.BoxGeometry(1, 1, 1);
-            let bodyGeometry = new THREE.BoxGeometry(1.5, 3.5, 1.5);
+            let bodyGeometry = new THREE.BoxGeometry(1.1, 3, 1.1);
 
             let material = new THREE.MeshLambertMaterial({color: 0x0022ee});
 
@@ -128,6 +127,8 @@ socket.on("player_add", (data) => {
             headMesh.position.y = 3.75;
             textMesh.position.y = 5;
 
+            console.log(player.id);
+
             game.playerMeshes[player.id] = {
                 username: player.username,
                 body: bodyMesh,
@@ -140,8 +141,27 @@ socket.on("player_add", (data) => {
 
 socket.on('world_state', (data) => {
     if (game.inGame) {
+        // self
+        let localPlayer = data.players[socket.id];
+        if (localPlayer !== undefined) {
+            localPlayerState = localPlayer.playerState;
+        }
+
+        // others
+        Object.keys(data.players).forEach(sid => {
+            let player = data.players[sid];
+            if (sid !== socket.id) {
+                console.log(player);
+                let playerState = player.playerState;
+                let position = playerState.position;
+                console.log(game.playerMeshes);
+                console.log(game.playerMeshes[sid]);
+                game.playerMeshes[sid].body.position.set(position.x, position.y + 1.75, position.z);
+                game.playerMeshes[sid].head.position.set(position.x, position.y + 3.75, position.z);
+                game.playerMeshes[sid].text.position.set(position.x, position.y + 5, position.z);
+            }
+        })
         // correct clock
-        let prevTick = clientData.tick;
         clientData.tick = data.tick + Math.floor( (Date.now() - data.stamp) / 5);
     }
 });
@@ -186,32 +206,9 @@ async function init() {
 
 }
 
-function handleSubtick() {
-    if (game.inGame) {
-        localPlayerState = processMovement(localInputState.inputs, localInputState.prevInputs, localInputState.rotation, localPlayerState, game.map);
-
-        clientData.inputCache[clientData.tick] = {...localInputState};
-
-        clientData.tick += 1;
-        if (clientData.tick % 4 === 0) {
-            handleTick();
-        }
-    }
-    localInputState.prevInputs = localInputState.inputs;
-}
-
 function handleTick() {
-    let loggedInputs = [];
-    Object.keys(clientData.inputCache).forEach(key => {
-        if (key >= clientData.tick - 4) {
-            loggedInputs.push(clientData.inputCache[key]);
-        }
-    });
-    if (clientData.tick % 80 === 0) {
-        console.log(loggedInputs);
-    }
     socket.emit('input_state', {
-        logged: loggedInputs,
+        input: localInputState,
     });
 }
 
@@ -288,9 +285,10 @@ function mouseReleased(event) {
 }
 
 function mouseMoved(event) {
-    localInputState.rotation.x -= event.movementY * storage.localSettings.sensitivity * deltaTime * 0.0001;
-    localInputState.rotation.y -= event.movementX * storage.localSettings.sensitivity * deltaTime * 0.0001;
-
+    if (game.mouseLocked) {
+        localInputState.rotation.x -= event.movementY * storage.localSettings.sensitivity * deltaTime * 0.0001;
+        localInputState.rotation.y -= event.movementX * storage.localSettings.sensitivity * deltaTime * 0.0001;
+    }
     if (localInputState.rotation.x > Math.PI / 2 - 0.01) {
         localInputState.rotation.x = Math.PI / 2 - 0.01;
     }

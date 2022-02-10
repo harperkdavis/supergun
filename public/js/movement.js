@@ -1,29 +1,31 @@
 function processMovement(inputs, prevInputs, rotation, lps, map) {
 
+    const PLAYER_SPEED = 0.06, JUMP_HEIGHT = 0.35, GRAVITY = 0.006, SLOWDOWN = 1.3;
+
     if (inputs.includes('KeyW')) {
-        lps.velocity.x += Math.sin(rotation.y) * 0.01;
-        lps.velocity.z += Math.cos(rotation.y) * 0.01;
+        lps.velocity.x += Math.sin(rotation.y) * PLAYER_SPEED;
+        lps.velocity.z += Math.cos(rotation.y) * PLAYER_SPEED;
     }
     if (inputs.includes('KeyA')) {
-        lps.velocity.x += Math.sin(rotation.y + Math.PI / 2) * 0.01;
-        lps.velocity.z += Math.cos(rotation.y + Math.PI / 2) * 0.01;
+        lps.velocity.x += Math.sin(rotation.y + Math.PI / 2) * PLAYER_SPEED;
+        lps.velocity.z += Math.cos(rotation.y + Math.PI / 2) * PLAYER_SPEED;
     }
     if (inputs.includes('KeyD')) {
-        lps.velocity.x += Math.sin(rotation.y - Math.PI / 2) * 0.01;
-        lps.velocity.z += Math.cos(rotation.y - Math.PI / 2) * 0.01;
+        lps.velocity.x += Math.sin(rotation.y - Math.PI / 2) * PLAYER_SPEED;
+        lps.velocity.z += Math.cos(rotation.y - Math.PI / 2) * PLAYER_SPEED;
     }
     if (inputs.includes('KeyS')) {
-        lps.velocity.x += Math.sin(rotation.y + Math.PI) * 0.01;
-        lps.velocity.z += Math.cos(rotation.y + Math.PI) * 0.01;
+        lps.velocity.x += Math.sin(rotation.y + Math.PI) * PLAYER_SPEED;
+        lps.velocity.z += Math.cos(rotation.y + Math.PI) * PLAYER_SPEED;
     }
     if (inputs.includes('Space') && lps.canJump) {
-        lps.velocity.y = 0.15;
+        lps.velocity.y = JUMP_HEIGHT;
         lps.canJump = false;
     }
-    lps.velocity.x /= 1.1;
-    lps.velocity.z /= 1.1;
+    lps.velocity.x /= SLOWDOWN;
+    lps.velocity.z /= SLOWDOWN;
 
-    lps.velocity.y -= 0.0015;
+    lps.velocity.y -= GRAVITY;
 
     let oldPos = {x: lps.position.x, y: lps.position.y, z: lps.position.z};
     let newPos = {x: lps.position.x + lps.velocity.x,
@@ -115,7 +117,7 @@ function processMovement(inputs, prevInputs, rotation, lps, map) {
 
                     } else if (mapBox[0] === 'I') {
                         if (Math.pow(newPos.x - (x * 16 + 8), 2) + Math.pow(newPos.y - (y * 12), 2) + Math.pow(newPos.z - (z * 16 + 8), 2) <= 20) {
-                            lps.velocity.y = 0.4;
+                            lps.velocity.y = JUMP_HEIGHT * 2.4;
                             lps.canJump = true;
                         }
                     }
@@ -172,4 +174,8 @@ function calculateIntersection(x1,y1,x2,y2, x3,y3,x4,y4) {
         }
     }
     return {x: x, y: y};
+}
+
+if (exports !== undefined) {
+    exports.processMovement = processMovement;
 }

@@ -5,7 +5,7 @@ const fs = require('fs');
 const app = express();
 const port = process.env.PORT || 8000;
 
-const movement = require('./public/js/movement');
+const movement = require('./public/js/movement.js');
 
 app.use(express.static('public'));
 app.use(cors({origin: true}));
@@ -27,7 +27,7 @@ const server = app.listen(port, () => {
   serverData.map = JSON.parse(file.toString());
 
   console.log(`SUPERGUN Server running on ${port}`);
-  setInterval(handleSubtick, 5);
+  setInterval(handleTick, 10);
 });
 
 const socket = require('socket.io');
@@ -38,9 +38,10 @@ io.on('connection', (socket) => {
   gameState.players[socket.id] = {
     hasJoinedGame: false,
     username: "undefined",
-    inputs: {},
+    id: socket.id,
+    inputState: {rotation: {x: 0, y: 0}, prevInputs: [], inputs: []},
     playerState: {
-      position: {x: 0, y: 0, z: 0},
+      position: {x: 0, y: 8, z: 0},
       velocity: {x: 0, y: 0, z: 0},
       canJump: false,
     },
@@ -72,9 +73,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('input_state', (data) => {
-    for (let i = 0; i < data.logged.length; i++) {
-      gameState.players[socket.id].inputs[serverData.tick + i] = data.logged[i];
-    }
+    gameState.players[socket.id].inputState = data.input;
   });
 
 });
@@ -83,14 +82,17 @@ app.get('/map', (req, res) => {
   res.send(serverData.map);
 });
 
-function handleSubtick() {
-  serverData.tick += 1;
-  if (serverData.tick % 4 === 0) {
-    handleTick();
-  }
-}
 
 function handleTick() {
-  let worldState = {tick: serverData.tick, stamp: Date.now()};
+  serverData.tick += 1;
+  Object.keys(gameState.players).forEach(sid => {
+    let player = gameState.players[sid];
+    if (player.hasJoinedGame) {
+      let input = player.inputState;
+      player.playerState = movement.processMovement(input.inputs, input.prevInputs, input.rotation, player.playerState, serverData.map);
+    }
+  });
+
+  let worldState = {tick: serverData.tick, stamp: Date.now(), players: gameState.players};
   io.emit('world_state', worldState);
 }
