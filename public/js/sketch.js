@@ -56,6 +56,11 @@ let localInputState = {
     inputs: []
 };
 
+let clientData = {
+    inputCache: {},
+    tick: 0
+}
+
 let game = {
     gameCamera: undefined,
     orbitCamera: undefined,
@@ -67,6 +72,10 @@ let game = {
     map: [],
     mapLevel: [],
 
+    playerMeshes: {},
+
+    movementInterval: undefined,
+
     username: "nathan_is_short",
 }
 
@@ -77,13 +86,13 @@ let assets = {
     }
 };
 
-let SERVER_IP = "https://supergun.herokuapp.com";
-const socket = io();
+let SERVER_IP = "http://supergun.herokuapp.com";
+const socket = io(SERVER_IP);
 
 $('#joinButton').click(function () {
     game.username = $('#usernameField').val();
     if (game.username === '') {
-        game.username = 'stinkyguy';
+        game.username = 'turbo_dumbass_cumwipe';
     } else if (game.username.length > 32) {
         game.username = game.username.substring(0, 31);
     }
@@ -93,7 +102,50 @@ $('#joinButton').click(function () {
 
 socket.on("register_accept", (data) => {
     game.inGame = true;
+    localInputState.rotation = {x: 0, y: 0};
+    clientData.tick = data.tick + Math.floor((Date.now() - data.stamp) / 5);
+    game.movementInterval = setInterval(handleSubtick, 5);
 });
+
+socket.on("player_add", (data) => {
+    if (game.inGame) {
+        data.added.forEach(player => {
+            let textGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+            let headGeometry = new THREE.BoxGeometry(1, 1, 1);
+            let bodyGeometry = new THREE.BoxGeometry(1.5, 3.5, 1.5);
+
+            let material = new THREE.MeshLambertMaterial({color: 0x0022ee});
+
+            let textMesh = new THREE.Mesh(textGeometry, material);
+            let headMesh = new THREE.Mesh(headGeometry, material);
+            let bodyMesh = new THREE.Mesh(bodyGeometry, material);
+
+            game.scene.add(textMesh);
+            game.scene.add(headMesh);
+            game.scene.add(bodyMesh);
+
+            bodyMesh.position.y = 1.75;
+            headMesh.position.y = 3.75;
+            textMesh.position.y = 5;
+
+            game.playerMeshes[player.id] = {
+                username: player.username,
+                body: bodyMesh,
+                head: headMesh,
+                text: textMesh,
+            };
+        });
+    }
+});
+
+socket.on('world_state', (data) => {
+    if (game.inGame) {
+        // correct clock
+        let prevTick = clientData.tick;
+        clientData.tick = data.tick + Math.floor( (Date.now() - data.stamp) / 5);
+    }
+});
+
 
 init();
 
@@ -132,13 +184,35 @@ async function init() {
 
     document.addEventListener('pointerlockchange', mouseLocked, false);
 
-    setInterval(function () {
-        if (game.inGame) {
-            processMovement(localInputState.inputs, localInputState.prevInputs, localInputState.rotation);
-        }
-        localInputState.prevInputs = localInputState.inputs;
-    }, 5);
+}
 
+function handleSubtick() {
+    if (game.inGame) {
+        localPlayerState = processMovement(localInputState.inputs, localInputState.prevInputs, localInputState.rotation, localPlayerState, game.map);
+
+        clientData.inputCache[clientData.tick] = {...localInputState};
+
+        clientData.tick += 1;
+        if (clientData.tick % 4 === 0) {
+            handleTick();
+        }
+    }
+    localInputState.prevInputs = localInputState.inputs;
+}
+
+function handleTick() {
+    let loggedInputs = [];
+    Object.keys(clientData.inputCache).forEach(key => {
+        if (key >= clientData.tick - 4) {
+            loggedInputs.push(clientData.inputCache[key]);
+        }
+    });
+    if (clientData.tick % 80 === 0) {
+        console.log(loggedInputs);
+    }
+    socket.emit('input_state', {
+        logged: loggedInputs,
+    });
 }
 
 async function loadMap() {
@@ -281,185 +355,10 @@ function update(time) {
 
 }
 
-function processMovement(inputs, prevInputs, rotation) {
-
-    if (inputs.includes('KeyW')) {
-        localPlayerState.velocity.x += Math.sin(rotation.y) * 0.01;
-        localPlayerState.velocity.z += Math.cos(rotation.y) * 0.01;
-    }
-    if (inputs.includes('KeyA')) {
-        localPlayerState.velocity.x += Math.sin(rotation.y + Math.PI / 2) * 0.01;
-        localPlayerState.velocity.z += Math.cos(rotation.y + Math.PI / 2) * 0.01;
-    }
-    if (inputs.includes('KeyD')) {
-        localPlayerState.velocity.x += Math.sin(rotation.y - Math.PI / 2) * 0.01;
-        localPlayerState.velocity.z += Math.cos(rotation.y - Math.PI / 2) * 0.01;
-    }
-    if (inputs.includes('KeyS')) {
-        localPlayerState.velocity.x += Math.sin(rotation.y + Math.PI) * 0.01;
-        localPlayerState.velocity.z += Math.cos(rotation.y + Math.PI) * 0.01;
-    }
-    if (inputs.includes('Space') && localPlayerState.canJump) {
-        localPlayerState.velocity.y = 0.15;
-        localPlayerState.canJump = false;
-    }
-    localPlayerState.velocity.x /= 1.1;
-    localPlayerState.velocity.z /= 1.1;
-
-    localPlayerState.velocity.y -= 0.0015;
-
-    let oldPos = {x: localPlayerState.position.x, y: localPlayerState.position.y, z: localPlayerState.position.z};
-    let newPos = {x: localPlayerState.position.x + localPlayerState.velocity.x,
-        y: localPlayerState.position.y + localPlayerState.velocity.y,
-        z: localPlayerState.position.z + localPlayerState.velocity.z};
-    for (let x = Math.floor(newPos.x / 16) - 1; x <= Math.floor(newPos.x / 16) + 1; x++) {
-        for (let z = Math.floor(newPos.z / 16) - 1; z <= Math.floor(newPos.z / 16) + 1; z++) {
-            for (let y = Math.floor(newPos.y / 12) - 1; y <= Math.floor(newPos.y / 12) + 1; y++) {
-                if (y >= 0 && y < game.map.length && isWithin(x, z, 0, 0, 14, 14)) {
-                    let mapBox = game.map[y][x][z];
-
-                    if (mapBox[0] === '*') {
-
-                        if (newPos.y + 4 >= y * 12 && newPos.y + 0.01 < y * 12 + 12 && isWithin(newPos.x, newPos.z, x * 16 - 0.5, z * 16 - 0.5, (x + 1) * 16 + 0.5, (z + 1) * 16 + 0.5)) {
-                            let northIntersect = calculateIntersection(oldPos.x, oldPos.z, newPos.x, newPos.z, x * 16 - 0.5, z * 16 - 0.5, x * 16 + 16 + 0.5, z * 16 - 0.5);
-                            if (northIntersect !== false) {
-                                newPos.z = northIntersect.y;
-                                localPlayerState.canJump = true;
-                            } else {
-                                let southIntersect = calculateIntersection(oldPos.x, oldPos.z, newPos.x, newPos.z, x * 16 - 0.5, z * 16 + 16.5, x * 16 + 16 + 0.5, z * 16 + 16.5);
-                                if (southIntersect !== false) {
-                                    newPos.z = southIntersect.y;
-                                    localPlayerState.canJump = true;
-                                } else {
-                                    let westIntersect = calculateIntersection(oldPos.x, oldPos.z, newPos.x, newPos.z, x * 16 - 0.5, z * 16 - 0.5, x * 16 - 0.5, z * 16 + 16.5);
-                                    if (westIntersect !== false) {
-                                        newPos.x = westIntersect.x;
-                                        localPlayerState.canJump = true;
-                                    } else {
-                                        let eastIntersect = calculateIntersection(oldPos.x, oldPos.z, newPos.x, newPos.z, x * 16 + 16.5, z * 16 - 0.5, x * 16 + 16.5, z * 16 + 16.5);
-                                        if (eastIntersect !== false) {
-                                            newPos.x = eastIntersect.x;
-                                            localPlayerState.canJump = true;
-                                        } else { // Top / Bottom
-                                            if (isWithin(newPos.x, newPos.z, x * 16, z * 16, (x + 1) * 16, (z + 1) * 16)) {
-                                                if (newPos.y < oldPos.y && newPos.y < y * 12 + 12) {
-                                                    newPos.y = y * 12 + 12;
-                                                    localPlayerState.velocity.y = 0;
-                                                    localPlayerState.canJump = true;
-                                                } else if (newPos.y + 4 > y * 12 && newPos.y < y * 12 + 6) {
-                                                    newPos.y = y * 12 - 2;
-                                                    localPlayerState.velocity.y = 0;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                    } else if (mapBox[0] === '_') {
-
-                        if (newPos.y + 4 >= y * 12 + 10 && newPos.y + 0.01 < y * 12 + 12 && isWithin(newPos.x, newPos.z, x * 16 - 0.5, z * 16 - 0.5, (x + 1) * 16 + 0.5, (z + 1) * 16 + 0.5)) {
-                            let northIntersect = calculateIntersection(oldPos.x, oldPos.z, newPos.x, newPos.z, x * 16 - 0.5, z * 16 - 0.5, x * 16 + 16 + 0.5, z * 16 - 0.5);
-                            if (northIntersect !== false) {
-                                newPos.z = northIntersect.y;
-                                localPlayerState.canJump = true;
-                            } else {
-                                let southIntersect = calculateIntersection(oldPos.x, oldPos.z, newPos.x, newPos.z, x * 16 - 0.5, z * 16 + 16.5, x * 16 + 16 + 0.5, z * 16 + 16.5);
-                                if (southIntersect !== false) {
-                                    newPos.z = southIntersect.y;
-                                    localPlayerState.canJump = true;
-                                } else {
-                                    let westIntersect = calculateIntersection(oldPos.x, oldPos.z, newPos.x, newPos.z, x * 16 - 0.5, z * 16 - 0.5, x * 16 - 0.5, z * 16 + 16.5);
-                                    if (westIntersect !== false) {
-                                        newPos.x = westIntersect.x;
-                                        localPlayerState.canJump = true;
-                                    } else {
-                                        let eastIntersect = calculateIntersection(oldPos.x, oldPos.z, newPos.x, newPos.z, x * 16 + 16.5, z * 16 - 0.5, x * 16 + 16.5, z * 16 + 16.5);
-                                        if (eastIntersect !== false) {
-                                            newPos.x = eastIntersect.x;
-                                            localPlayerState.canJump = true;
-                                        } else { // Top / Bottom
-                                            if (isWithin(newPos.x, newPos.z, x * 16, z * 16, (x + 1) * 16, (z + 1) * 16)) {
-                                                if (newPos.y < oldPos.y && newPos.y < y * 12 + 12) {
-                                                    newPos.y = y * 12 + 12;
-                                                    localPlayerState.velocity.y = 0;
-                                                    localPlayerState.canJump = true;
-                                                } else if (newPos.y + 4 > y * 12 + 10 && newPos.y < y * 12 + 11) {
-                                                    newPos.y = y * 12 + 6;
-                                                    localPlayerState.velocity.y = 0;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                    } else if (mapBox[0] === 'I') {
-                        if (Math.pow(newPos.x - (x * 16 + 8), 2) + Math.pow(newPos.y - (y * 12), 2) + Math.pow(newPos.z - (z * 16 + 8), 2) <= 20) {
-                            localPlayerState.velocity.y = 0.3;
-                        }
-                    }
-
-                }
-            }
-        }
-    }
-    
-    localPlayerState.position.x = newPos.x;
-    localPlayerState.position.y = newPos.y;
-    localPlayerState.position.z = newPos.z;
-
-}
-
 function draw(time) {
     update(time);
-    
 
 	game.renderer.render(game.scene, game.inGame ? game.gameCamera : game.orbitCamera);
 
     prevTime = time;
-}
-
-function isWithin(x, y, x1, y1, x2, y2) {
-    return (x >= x1 && x <= x2 && y >= y1 && y <= y2);
-}
-
-
-// https://gist.github.com/gordonwoodhull/50eb65d2f048789f9558
-const eps = 0.0000001;
-function between(a, b, c) {
-    return a - eps <= b && b <= c + eps;
-}
-function calculateIntersection(x1,y1,x2,y2, x3,y3,x4,y4) {
-    let x=((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4)) /
-        ((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
-    let y=((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4)) /
-        ((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
-    if (isNaN(x) || isNaN(y)) {
-        return false;
-    } else {
-        if (x1>=x2) {
-            if (!between(x2, x, x1)) {return false;}
-        } else {
-            if (!between(x1, x, x2)) {return false;}
-        }
-        if (y1>=y2) {
-            if (!between(y2, y, y1)) {return false;}
-        } else {
-            if (!between(y1, y, y2)) {return false;}
-        }
-        if (x3>=x4) {
-            if (!between(x4, x, x3)) {return false;}
-        } else {
-            if (!between(x3, x, x4)) {return false;}
-        }
-        if (y3>=y4) {
-            if (!between(y4, y, y3)) {return false;}
-        } else {
-            if (!between(y3, y, y4)) {return false;}
-        }
-    }
-    return {x: x, y: y};
 }
