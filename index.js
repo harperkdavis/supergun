@@ -33,8 +33,6 @@ const server = app.listen(port, () => {
 const socket = require('socket.io');
 const io = socket(server);
 
-io.set('origins', '*:*');
-
 io.on('connection', (socket) => {
   console.log('User connected. [' + socket.id + ']');
   gameState.players[socket.id] = {
