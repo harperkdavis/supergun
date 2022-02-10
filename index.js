@@ -31,7 +31,10 @@ const server = app.listen(port, () => {
 });
 
 const socket = require('socket.io');
-const io = socket(server);
+const io = socket(server, { cors: {
+      origin: "https://supergun.herokuapp.com",
+      methods: ["GET", "POST"]
+}});
 
 io.on('connection', (socket) => {
   console.log('User connected. [' + socket.id + ']');
