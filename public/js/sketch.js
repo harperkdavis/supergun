@@ -86,7 +86,7 @@ let assets = {
     }
 };
 
-let SERVER_IP = "http://supergun.herokuapp.com";
+let SERVER_IP = "https://supergun.herokuapp.com";
 const socket = io(SERVER_IP);
 
 $('#joinButton').click(function () {
