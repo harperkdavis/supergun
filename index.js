@@ -37,7 +37,7 @@ const io = socket(server, { cors: {
 }});
 
 io.on('connection', (socket) => {
-  console.log('User connected. [' + socket.id + ']');
+  console.log('Player connected: (' + socket.id + ')');
   gameState.players[socket.id] = {
     hasJoinedGame: false,
     username: "undefined",
@@ -55,12 +55,20 @@ io.on('connection', (socket) => {
   };
 
   socket.on('disconnect', (reason) => {
+    io.emit('player_remove', {removed: {id: socket.id}});
+    console.log('Player disconnected (' + socket.id + '): ' + gameState.players[socket.id].username);
+
+    sendChat(gameState.players[socket.id].username + " has left the game");
     delete gameState.players[socket.id];
   });
 
   socket.on('register', (data) => {
     gameState.players[socket.id].hasJoinedGame = true;
     gameState.players[socket.id].username = data.username;
+
+    console.log('Player registered (' + socket.id + '): ' + data.username);
+
+    sendChat(data.username + " has joined the game");
 
     socket.emit('register_accept', {tick: serverData.tick, stamp: Date.now()});
 
@@ -84,6 +92,11 @@ io.on('connection', (socket) => {
 app.get('/map', (req, res) => {
   res.send(serverData.map);
 });
+
+function sendChat(chat, color=0xffffff) {
+  io.emit('chat', {chat: chat, color: 0xffffff});
+  console.log('Chat: ' + chat);
+}
 
 
 function handleTick() {

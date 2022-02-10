@@ -66,7 +66,7 @@ function processMovement(inputs, prevInputs, rotation, lps, map) {
                                                     lps.velocity.y = 0;
                                                     lps.canJump = true;
                                                 } else if (newPos.y + 4 > y * 12 && newPos.y < y * 12 + 6) {
-                                                    newPos.y = y * 12 - 2;
+                                                    newPos.y = y * 12 - 4;
                                                     lps.velocity.y = 0;
                                                 }
                                             }

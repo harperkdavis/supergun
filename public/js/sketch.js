@@ -127,8 +127,6 @@ socket.on("player_add", (data) => {
             headMesh.position.y = 3.75;
             textMesh.position.y = 5;
 
-            console.log(player.id);
-
             game.playerMeshes[player.id] = {
                 username: player.username,
                 body: bodyMesh,
@@ -136,6 +134,19 @@ socket.on("player_add", (data) => {
                 text: textMesh,
             };
         });
+    }
+});
+
+socket.on("player_remove", (data) => {
+    if (game.inGame) {
+        let player = game.playerMeshes[data.removed.id];
+        console.log(player);
+        if (player !== undefined) {
+            game.scene.remove(player.body);
+            game.scene.remove(player.head);
+            game.scene.remove(player.text);
+            delete game.playerMeshes[data.removed.id];
+        }
     }
 });
 
@@ -151,14 +162,13 @@ socket.on('world_state', (data) => {
         Object.keys(data.players).forEach(sid => {
             let player = data.players[sid];
             if (sid !== socket.id) {
-                console.log(player);
                 let playerState = player.playerState;
                 let position = playerState.position;
-                console.log(game.playerMeshes);
-                console.log(game.playerMeshes[sid]);
-                game.playerMeshes[sid].body.position.set(position.x, position.y + 1.75, position.z);
-                game.playerMeshes[sid].head.position.set(position.x, position.y + 3.75, position.z);
-                game.playerMeshes[sid].text.position.set(position.x, position.y + 5, position.z);
+                if (game.playerMeshes[sid] !== undefined) {
+                    game.playerMeshes[sid].body.position.set(position.x, position.y + 1.75, position.z);
+                    game.playerMeshes[sid].head.position.set(position.x, position.y + 3.75, position.z);
+                    game.playerMeshes[sid].text.position.set(position.x, position.y + 5, position.z);
+                }
             }
         })
         // correct clock
