@@ -21,6 +21,11 @@ let serverData = {
   tick: 0,
 };
 
+const CONSOLE_USER = {
+  username: '&CONSOLE&',
+  admin: true,
+}
+
 
 const server = app.listen(port, () => {
   let file = fs.readFileSync("maps/standard.json");
@@ -28,6 +33,8 @@ const server = app.listen(port, () => {
 
   console.log(`SUPERGUN Server running on ${port}`);
   setInterval(handleTick, 10);
+
+
 });
 
 const socket = require('socket.io');
@@ -51,15 +58,18 @@ io.on('connection', (socket) => {
     rotation: {x: 0, y: 0},
     hasSupergun: false,
     health: 100,
-    forceMove: 0,
+    admin: true,
   };
 
   socket.on('disconnect', (reason) => {
     io.emit('player_remove', {removed: {id: socket.id}});
-    console.log('Player disconnected (' + socket.id + '): ' + gameState.players[socket.id].username);
+    let player = gameState.players[socket.id];
+    if (player !== undefined) {
+      console.log('Player disconnected (' + socket.id + '): ' + player.username);
 
-    sendChat(gameState.players[socket.id].username + " has left the game", 0x33ff33);
-    delete gameState.players[socket.id];
+      sendChat(player.username + " has left the game", 0x33ff33);
+      delete gameState.players[socket.id];
+    }
   });
 
   socket.on('register', (data) => {
@@ -84,7 +94,9 @@ io.on('connection', (socket) => {
   });
 
   socket.on('input_state', (data) => {
-    gameState.players[socket.id].inputState = data.input;
+    if (gameState.players[socket.id] !== undefined) {
+      gameState.players[socket.id].inputState = data.input;
+    }
   });
 
   socket.on('chat_request', (data) => {
@@ -92,7 +104,13 @@ io.on('connection', (socket) => {
     if (message.length > 512) {
       message = message.substring(0, 512);
     }
-    sendChat(`(${gameState.players[socket.id].username}): ${message}`);
+    if (message.trim().length !== 0) {
+      if (message[0] === '/') {
+        executeCommand(message.substring(1, message.length), gameState.players[socket.id], socket);
+      } else {
+        sendChat(`(${gameState.players[socket.id].username}): ${message}`);
+      }
+    }
   });
 
 });
@@ -106,14 +124,82 @@ function sendChat(chat, color=0xffffff) {
   console.log('Chat: ' + chat);
 }
 
+function sendChatTo(socket, chat, color=0xffffff) {
+  if (socket !== undefined) {
+    socket.emit('chat', {message: chat, color: color});
+    console.log('Chat ->: ' + chat);
+  }
+}
+
+function executeCommand(command, executor) {
+  let args = command.split(' ');
+  if (executor === 'console' || executor.admin) {
+    sendChatTo(io.sockets.sockets.get(executor.id), execute(args[0], args.slice(1, args.length), executor), 0xcccccc);
+  }
+
+}
+
+function execute(command, args, sender) {
+  if (command === 'list') {
+    let list = '';
+    Object.keys(gameState.players).forEach(sid => {
+      let player = gameState.players[sid];
+      list = list + player.username + ', ';
+    });
+    if (list.length > 2) {
+      list = list.substring(0, list.length - 2);
+    }
+    return list;
+  } else if (command === 'hi') {
+    return 'hi!';
+  }
+
+  if (sender.admin) {
+    if (command === 'kick') {
+      if (args.length > 0) {
+        let playerKeys = Object.keys(gameState.players);
+        for (let i = 0; i < playerKeys.length; i++) {
+          let sid = playerKeys[i];
+          let player = gameState.players[sid];
+          let username = player.username;
+          if (username === args[0]) {
+            if (sender.username === username) {
+              return 'you cannot kick yourself!';
+            }
+            if (!player.hasJoinedGame) {
+              return 'you cannot kick an unregistered player!';
+            }
+
+            io.emit('player_remove', {removed: {id: player.id}});
+            console.log('Player kicked (' + player.id + '): ' + username);
+
+            sendChat(username + " was kicked", 0x33ff33);
+
+            io.sockets.sockets.get(player.id).emit('delete_webpage', {});
+            delete gameState.players[player.id];
+
+            return 'kicked ' + username;
+          }
+        }
+        return 'player not found';
+      } else {
+        return 'too few arguments';
+      }
+    }
+  }
+  return '???';
+}
+
 
 function handleTick() {
   serverData.tick += 1;
   Object.keys(gameState.players).forEach(sid => {
     let player = gameState.players[sid];
-    if (player.hasJoinedGame) {
-      let input = player.inputState;
-      player.playerState = movement.processMovement(input.inputs, input.prevInputs, input.rotation, player.playerState, serverData.map);
+    if (player !== undefined) {
+      if (player.hasJoinedGame) {
+        let input = player.inputState;
+        player.playerState = movement.processMovement(input.inputs, input.prevInputs, input.rotation, player.playerState, serverData.map);
+      }
     }
   });
 

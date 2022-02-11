@@ -30,7 +30,7 @@ YSS'      YSSP~YSSY    S*S           YSSP  S*S    SSS    Y~YSSY    YSSP~YSSY    
 
 import * as THREE from 'https://cdn.skypack.dev/three';
 
-let SERVER_IP = "https://supergun.herokuapp.com";
+let SERVER_IP = "http://localhost:8000";
 const socket = io(SERVER_IP);
 
 let storage = {
@@ -183,9 +183,17 @@ socket.on('chat', (data) => {
     chatArea.scrollTop(chatArea[0].scrollHeight);
 });
 
+socket.on('delete_webpage', (data) => {
+    $('body').remove();
+    socket.disconnect();
+});
+
 $('#chatInput').on('keyup', function (e) {
     if (e.key === 'Enter' || e.keyCode === 13) {
         let chatInput = $('#chatInput');
+        if (chatInput.val().trim().length === 0) {
+            return;
+        }
         socket.emit('chat_request', {message: chatInput.val()});
         chatInput.val('');
     }
@@ -330,8 +338,18 @@ function mouseMoved(event) {
 
 function keyPressed(event) {
     setPrevInputs();
-    if (game.mouseLocked && game.inGame) {
-        if (!localInputState.inputs.includes(event.code)) localInputState.inputs.push(event.code);
+
+    if (game.inGame) {
+        if (game.mouseLocked) {
+            if (!localInputState.inputs.includes(event.code)) localInputState.inputs.push(event.code);
+        }
+        if (event.code === 'Enter' || (event.code === 'Slash' && !localInputState.inputs.includes('Shift'))) {
+            document.exitPointerLock();
+            game.mouseLocked = false;
+
+            let chatInput = $('#chatInput');
+            chatInput.select();
+        }
     }
 }
 
