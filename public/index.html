@@ -36,7 +36,7 @@
                     <p class="gameTitle">supergun</p>
                     <p class="lowSpace">Enter Username:</p>
                     <label>
-                        <input type="text" value="nathan_is_short" class="menuItem bigField" id="usernameField">
+                        <input type="text" value="nathan_is_short" class="menuItem bigField" id="usernameField" maxlength=512>
                     </label>
                     <br>
                     <button id="joinButton">Join Game</button>
@@ -53,6 +53,13 @@
             </div>
             <div id="inGame">
                 <img src="assets/images/crosshair.png" id="crosshair">
+                <div id="chat">
+                    <div id="chatArea">
+                    </div>
+                    <label>
+                        <input type="text" id="chatInput" maxlength=512>
+                    </label>
+                </div>
             </div>
         </div>
 

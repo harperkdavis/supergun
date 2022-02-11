@@ -30,7 +30,7 @@ YSS'      YSSP~YSSY    S*S           YSSP  S*S    SSS    Y~YSSY    YSSP~YSSY    
 
 import * as THREE from 'https://cdn.skypack.dev/three';
 
-let SERVER_IP = "https://supergun.herokuapp.com";
+let SERVER_IP = "http://localhost:8000";
 const socket = io(SERVER_IP);
 
 let storage = {
@@ -48,6 +48,7 @@ let localWorldState = {
 }
 
 let localPlayerState = {
+    targetPosition: {x: 0, y: 12, z: 0},
     position: {x: 0, y: 12, z: 0},
     velocity: {x: 0, y: 0, z: 0},
     canJump: true,
@@ -92,8 +93,6 @@ $('#joinButton').click(function () {
     game.username = $('#usernameField').val();
     if (game.username === '') {
         game.username = 'turbo_dumbass_cumwipe';
-    } else if (game.username.length > 32) {
-        game.username = game.username.substring(0, 31);
     }
 
     socket.emit('register', {username: game.username});
@@ -140,7 +139,6 @@ socket.on("player_add", (data) => {
 socket.on("player_remove", (data) => {
     if (game.inGame) {
         let player = game.playerMeshes[data.removed.id];
-        console.log(player);
         if (player !== undefined) {
             game.scene.remove(player.body);
             game.scene.remove(player.head);
@@ -155,7 +153,9 @@ socket.on('world_state', (data) => {
         // self
         let localPlayer = data.players[socket.id];
         if (localPlayer !== undefined) {
-            localPlayerState = localPlayer.playerState;
+            localPlayerState.targetPosition = localPlayer.playerState.position;
+            localPlayerState.velocity = localPlayer.playerState.velocity;
+            localPlayerState.canJump = localPlayer.playerState.canJump;
         }
 
         // others
@@ -176,6 +176,20 @@ socket.on('world_state', (data) => {
     }
 });
 
+socket.on('chat', (data) => {
+    let chatArea = $('#chatArea');
+
+    chatArea.append('<p class="chatMessage" style="color:#' + data.color.toString(16) + '">' + data.message + '</p>');
+    chatArea.scrollTop(chatArea[0].scrollHeight);
+});
+
+$('#chatInput').on('keyup', function (e) {
+    if (e.key === 'Enter' || e.keyCode === 13) {
+        let chatInput = $('#chatInput');
+        socket.emit('chat_request', {message: chatInput.val()});
+        chatInput.val('');
+    }
+});
 
 init();
 
@@ -213,6 +227,7 @@ async function init() {
     document.addEventListener('mouseup', mouseReleased, false);
 
     document.addEventListener('pointerlockchange', mouseLocked, false);
+
 
 }
 
@@ -277,9 +292,13 @@ function setPrevInputs() {
 function mousePressed(event) {
     setPrevInputs();
     if (!game.mouseLocked && game.inGame) {
-        game.renderer.domElement.requestPointerLock();
+        if (!(event.pageX < innerWidth / 4 && event.pageY > innerHeight * (3 / 4))) {
+            game.renderer.domElement.requestPointerLock();
+        }
     }
-    if (!localInputState.inputs.includes('Mouse' + event.button)) localInputState.inputs.push('Mouse' + event.button);
+    if (game.mouseLocked && game.inGame) {
+        if (!localInputState.inputs.includes('Mouse' + event.button)) localInputState.inputs.push('Mouse' + event.button);
+    }
 }
 
 function mouseLocked() {
@@ -289,9 +308,11 @@ function mouseLocked() {
 
 function mouseReleased(event) {
     setPrevInputs();
-    localInputState.inputs = localInputState.inputs.filter(code => {
-        return code !== 'Mouse' + event.button;
-    });
+    if (game.mouseLocked && game.inGame) {
+        localInputState.inputs = localInputState.inputs.filter(code => {
+            return code !== 'Mouse' + event.button;
+        });
+    }
 }
 
 function mouseMoved(event) {
@@ -309,14 +330,18 @@ function mouseMoved(event) {
 
 function keyPressed(event) {
     setPrevInputs();
-    if (!localInputState.inputs.includes(event.code)) localInputState.inputs.push(event.code);
+    if (game.mouseLocked && game.inGame) {
+        if (!localInputState.inputs.includes(event.code)) localInputState.inputs.push(event.code);
+    }
 }
 
 function keyReleased(event) {
     setPrevInputs();
-    localInputState.inputs = localInputState.inputs.filter(code => {
-        return code !== event.code;
-    });
+    if (game.mouseLocked && game.inGame) {
+        localInputState.inputs = localInputState.inputs.filter(code => {
+            return code !== event.code;
+        });
+    }
 }
 
 function onWindowResize() {
@@ -335,7 +360,11 @@ let prevTime = 0;
 
 function update(time) {
     deltaTime = time - prevTime;
-    localInputState.prevInputs = localInputState.inputs; 
+    localInputState.prevInputs = localInputState.inputs;
+
+    localPlayerState.position.x = lerp(localPlayerState.position.x, localPlayerState.targetPosition.x, 0.5);
+    localPlayerState.position.y = lerp(localPlayerState.position.y, localPlayerState.targetPosition.y, 0.5);
+    localPlayerState.position.z = lerp(localPlayerState.position.z, localPlayerState.targetPosition.z, 0.5);
 
     let position = localPlayerState.position;
     let rotation = localInputState.rotation;
@@ -369,4 +398,8 @@ function draw(time) {
 	game.renderer.render(game.scene, game.inGame ? game.gameCamera : game.orbitCamera);
 
     prevTime = time;
+}
+
+function lerp(a, b, c){
+    return (1 - c) * a + c * b;
 }

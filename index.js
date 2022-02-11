@@ -58,7 +58,7 @@ io.on('connection', (socket) => {
     io.emit('player_remove', {removed: {id: socket.id}});
     console.log('Player disconnected (' + socket.id + '): ' + gameState.players[socket.id].username);
 
-    sendChat(gameState.players[socket.id].username + " has left the game");
+    sendChat(gameState.players[socket.id].username + " has left the game", 0x33ff33);
     delete gameState.players[socket.id];
   });
 
@@ -68,7 +68,7 @@ io.on('connection', (socket) => {
 
     console.log('Player registered (' + socket.id + '): ' + data.username);
 
-    sendChat(data.username + " has joined the game");
+    sendChat(data.username + " has joined the game", 0x33ff33);
 
     socket.emit('register_accept', {tick: serverData.tick, stamp: Date.now()});
 
@@ -87,6 +87,14 @@ io.on('connection', (socket) => {
     gameState.players[socket.id].inputState = data.input;
   });
 
+  socket.on('chat_request', (data) => {
+    let message = data.message;
+    if (message.length > 512) {
+      message = message.substring(0, 512);
+    }
+    sendChat(`(${gameState.players[socket.id].username}): ${message}`);
+  });
+
 });
 
 app.get('/map', (req, res) => {
@@ -94,7 +102,7 @@ app.get('/map', (req, res) => {
 });
 
 function sendChat(chat, color=0xffffff) {
-  io.emit('chat', {chat: chat, color: 0xffffff});
+  io.emit('chat', {message: chat, color: color});
   console.log('Chat: ' + chat);
 }
 

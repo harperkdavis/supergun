@@ -67,6 +67,8 @@ button {
 }
 
 #inGame {
+    width: 100%;
+    height: 100%;
     position: static;
     display: inline-block;
 }
@@ -76,4 +78,36 @@ button {
     image-rendering: pixelated;
     top: calc(50% - 16px);
     left: calc(50% - 16px);
+}
+
+#chat {
+    position: absolute;
+    top:75%;
+    width: 25%;
+    height: 25%;
+
+    backdrop-filter: blur(10px) brightness(50%);
+
+}
+
+#chatArea {
+    height: calc(100% - 32px);
+    padding: 0 5px 5px;
+    overflow-x: hidden;
+    overflow-y: auto;
+
+}
+
+.chatMessage {
+    font-size: 12pt;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+#chatInput {
+    position: absolute;
+    bottom: 0px;
+    width: calc(100% - 8px);
+    font-size: 12pt;
+    font-family: 'Syne Mono', sans-serif;
 }
