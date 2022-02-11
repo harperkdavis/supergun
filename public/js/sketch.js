@@ -90,7 +90,7 @@ let assets = {
 };
 
 $('#joinButton').click(function () {
-    game.username = $('#usernameField').val();
+    game.username = $('#usernameField').val().trim();
     if (game.username === '') {
         game.username = 'turbo_dumbass_cumwipe';
     }
@@ -343,7 +343,7 @@ function keyPressed(event) {
         if (game.mouseLocked) {
             if (!localInputState.inputs.includes(event.code)) localInputState.inputs.push(event.code);
         }
-        if (event.code === 'Enter' || (event.code === 'Slash' && !localInputState.inputs.includes('Shift'))) {
+        if (event.code === 'Enter') {
             document.exitPointerLock();
             game.mouseLocked = false;
 

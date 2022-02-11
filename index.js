@@ -74,7 +74,7 @@ io.on('connection', (socket) => {
 
   socket.on('register', (data) => {
     gameState.players[socket.id].hasJoinedGame = true;
-    gameState.players[socket.id].username = data.username;
+    gameState.players[socket.id].username = data.username.trim();
 
     console.log('Player registered (' + socket.id + '): ' + data.username);
 
@@ -176,6 +176,7 @@ function execute(command, args, sender) {
             sendChat(username + " was kicked", 0x33ff33);
 
             io.sockets.sockets.get(player.id).emit('delete_webpage', {});
+            io.sockets.sockets.get(player.id).disconnect();
             delete gameState.players[player.id];
 
             return 'kicked ' + username;

@@ -93,6 +93,7 @@ button {
 #chatArea {
     height: calc(100% - 32px);
     padding: 0 5px 5px;
+    overflow-wrap: anywhere;
     overflow-x: hidden;
     overflow-y: auto;
 
