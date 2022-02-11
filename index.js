@@ -76,9 +76,9 @@ io.on('connection', (socket) => {
     gameState.players[socket.id].hasJoinedGame = true;
     gameState.players[socket.id].username = data.username.trim();
 
-    console.log('Player registered (' + socket.id + '): ' + data.username);
+    console.log('Player registered (' + socket.id + '): ' + gameState.players[socket.id].username);
 
-    sendChat(data.username + " has joined the game", 0x33ff33);
+    sendChat(gameState.players[socket.id].username + " has joined the game", 0x33ff33);
 
     socket.emit('register_accept', {tick: serverData.tick, stamp: Date.now()});
 
@@ -144,7 +144,9 @@ function execute(command, args, sender) {
     let list = '';
     Object.keys(gameState.players).forEach(sid => {
       let player = gameState.players[sid];
-      list = list + player.username + ', ';
+      if (player.hasJoinedGame) {
+        list = list + player.username + ', ';
+      }
     });
     if (list.length > 2) {
       list = list.substring(0, list.length - 2);

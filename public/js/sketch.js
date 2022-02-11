@@ -94,6 +94,9 @@ $('#joinButton').click(function () {
     if (game.username === '') {
         game.username = 'turbo_dumbass_cumwipe';
     }
+    if (game.username.length > 32) {
+        game.username = game.username.substring(0, 32);
+    }
 
     socket.emit('register', {username: game.username});
 });
