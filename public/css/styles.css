@@ -69,6 +69,7 @@ button {
 #inGame {
     width: 100%;
     height: 100%;
+    padding: 0px;
     position: static;
     display: inline-block;
 }
@@ -80,18 +81,30 @@ button {
     left: calc(50% - 16px);
 }
 
-#chat {
+#lowerleft {
     position: absolute;
-    top:75%;
+    top:70%;
     width: 25%;
-    height: 25%;
+    height: 30%;
 
     backdrop-filter: blur(10px) brightness(50%);
 
 }
 
+#status {
+    width: 100%;
+    height: 16.7%;
+    background-color: #444;
+    color: #fff;
+}
+
+.statusNumber {
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
 #chatArea {
-    height: calc(100% - 32px);
+    height: calc(83.3% - 32px);
     padding: 0 5px 5px;
     overflow-wrap: anywhere;
     overflow-x: hidden;

@@ -31,6 +31,18 @@ const server = app.listen(port, () => {
   let file = fs.readFileSync("maps/standard.json");
   serverData.map = JSON.parse(file.toString());
 
+  for (let y = 0; y < serverData.map.length; y++) {
+    for (let x = 0; x < 15; x++) {
+      for (let z = 0; z < 15; z++) {
+        let tile = serverData.map[y][z][x];
+        if (tile[1] === 's') {
+          serverData.spawnPoints.push({x: x * 16 + 8, y: y * 12 + 8, z: z * 16 + 8});
+        }
+      }
+    }
+  }
+
+
   console.log(`SUPERGUN Server running on ${port}`);
   setInterval(handleTick, 10);
 
@@ -43,6 +55,10 @@ const io = socket(server, { cors: {
       methods: ["GET", "POST"]
 }});
 
+function randomSpawnPoint() {
+  return serverData.spawnPoints[Math.floor(Math.random() * serverData.spawnPoints.length)];
+}
+
 io.on('connection', (socket) => {
   console.log('Player connected: (' + socket.id + ')');
   gameState.players[socket.id] = {
@@ -51,12 +67,14 @@ io.on('connection', (socket) => {
     id: socket.id,
     inputState: {rotation: {x: 0, y: 0}, prevInputs: [], inputs: []},
     playerState: {
-      position: {x: 0, y: 8, z: 0},
+      position: randomSpawnPoint(),
       velocity: {x: 0, y: 0, z: 0},
+      slowdown: 1.3,
       canJump: false,
+      shotCooldown: 0,
+      hasSupergun: false,
     },
     rotation: {x: 0, y: 0},
-    hasSupergun: false,
     health: 100,
     admin: true,
   };
@@ -104,6 +122,8 @@ io.on('connection', (socket) => {
     if (message.length > 512) {
       message = message.substring(0, 512);
     }
+    message = message.replace('script', 'h6');
+    message = message.replace('among_us_balls_in_my_jaws', 'script');
     if (message.trim().length !== 0) {
       if (message[0] === '/') {
         executeCommand(message.substring(1, message.length), gameState.players[socket.id], socket);
@@ -111,6 +131,7 @@ io.on('connection', (socket) => {
         sendChat(`(${gameState.players[socket.id].username}): ${message}`);
       }
     }
+
   });
 
 });
@@ -196,6 +217,17 @@ function execute(command, args, sender) {
 
 function handleTick() {
   serverData.tick += 1;
+  Object.keys(gameState.players).forEach(sid => {
+    let player = gameState.players[sid];
+    if (player !== undefined && player.hasJoinedGame) {
+      if (player.inputState.inputs.includes('Mouse0') && player.shotCooldown < 0) {
+
+        Object.keys(gameState.players).forEach(sid => {
+          let otherPlayer = gameState.players[sid];
+        });
+      }
+    }
+  });
   Object.keys(gameState.players).forEach(sid => {
     let player = gameState.players[sid];
     if (player !== undefined) {

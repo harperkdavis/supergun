@@ -30,7 +30,7 @@ YSS'      YSSP~YSSY    S*S           YSSP  S*S    SSS    Y~YSSY    YSSP~YSSY    
 
 import * as THREE from 'https://cdn.skypack.dev/three';
 
-let SERVER_IP = 'https://supergun.herokuapp.com'; //http://localhost:8000 //https://supergun.herokuapp.com
+let SERVER_IP = 'http://localhost:8000'; //http://localhost:8000 //https://supergun.herokuapp.com
 const socket = io(SERVER_IP);
 
 let storage = {
@@ -51,7 +51,10 @@ let localPlayerState = {
     targetPosition: {x: 0, y: 12, z: 0},
     position: {x: 0, y: 12, z: 0},
     velocity: {x: 0, y: 0, z: 0},
+    slowdown: 1.3,
     canJump: true,
+    shotCooldown: 0,
+    hasSupergun: false,
 };
 
 let localInputState = {
@@ -69,6 +72,8 @@ let game = {
     orbitCamera: undefined,
     scene: undefined,
     renderer: undefined,
+
+    cameraPosition: {x: 0, y: 0, z: 0},
     
     mouseLocked: false,
     inGame: false,
@@ -76,6 +81,15 @@ let game = {
     mapLevel: [],
 
     playerMeshes: {},
+
+    gunMesh: undefined,
+    gunMaterial: undefined,
+    supergunMaterial: undefined,
+
+    shotAnim: 0,
+
+    playerMaterial: undefined,
+    playerHeadMaterial: undefined,
 
     movementInterval: undefined,
 
@@ -111,29 +125,25 @@ socket.on("register_accept", (data) => {
 socket.on("player_add", (data) => {
     if (game.inGame) {
         data.added.forEach(player => {
-            let textGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
             let headGeometry = new THREE.BoxGeometry(1, 1, 1);
             let bodyGeometry = new THREE.BoxGeometry(1.1, 3, 1.1);
 
-            let material = new THREE.MeshLambertMaterial({color: 0x0022ee});
+            let headMaterial = game.playerHeadMaterial;
+            let material = game.playerMaterial;
 
-            let textMesh = new THREE.Mesh(textGeometry, material);
-            let headMesh = new THREE.Mesh(headGeometry, material);
+            let headMesh = new THREE.Mesh(headGeometry, headMaterial);
             let bodyMesh = new THREE.Mesh(bodyGeometry, material);
 
-            game.scene.add(textMesh);
             game.scene.add(headMesh);
             game.scene.add(bodyMesh);
 
             bodyMesh.position.y = 1.75;
             headMesh.position.y = 3.75;
-            textMesh.position.y = 5;
 
             game.playerMeshes[player.id] = {
                 username: player.username,
                 body: bodyMesh,
                 head: headMesh,
-                text: textMesh,
             };
         });
     }
@@ -145,7 +155,6 @@ socket.on("player_remove", (data) => {
         if (player !== undefined) {
             game.scene.remove(player.body);
             game.scene.remove(player.head);
-            game.scene.remove(player.text);
             delete game.playerMeshes[data.removed.id];
         }
     }
@@ -156,9 +165,13 @@ socket.on('world_state', (data) => {
         // self
         let localPlayer = data.players[socket.id];
         if (localPlayer !== undefined) {
-            localPlayerState.targetPosition = localPlayer.playerState.position;
-            localPlayerState.velocity = localPlayer.playerState.velocity;
-            localPlayerState.canJump = localPlayer.playerState.canJump;
+            localPlayerState = {...localPlayer.playerState};
+        }
+
+        if (!localPlayerState.hasSupergun && localPlayerState.shotCooldown === 63) {
+            game.shotAnim += 1;
+        } else if (localPlayerState.hasSupergun && localPlayerState.shotCooldown === 7) {
+            game.shotAnim += 1;
         }
 
         // others
@@ -170,10 +183,9 @@ socket.on('world_state', (data) => {
                 if (game.playerMeshes[sid] !== undefined) {
                     game.playerMeshes[sid].body.position.set(position.x, position.y + 1.75, position.z);
                     game.playerMeshes[sid].head.position.set(position.x, position.y + 3.75, position.z);
-                    game.playerMeshes[sid].text.position.set(position.x, position.y + 5, position.z);
                 }
             }
-        })
+        });
         // correct clock
         clientData.tick = data.tick + Math.floor( (Date.now() - data.stamp) / 5);
     }
@@ -212,8 +224,9 @@ async function init() {
 	game.scene = new THREE.Scene();
 
     await loadMap();
-    
 
+    game.playerMaterial = new THREE.MeshLambertMaterial({color: 0x0022ee});
+    game.playerHeadMaterial = new THREE.MeshLambertMaterial({color: 0xee0022});
     // Lighting
     const ambientLight = new THREE.AmbientLight(0x55555f);
     game.scene.add(ambientLight);
@@ -239,6 +252,12 @@ async function init() {
 
     document.addEventListener('pointerlockchange', mouseLocked, false);
 
+    game.gunMaterial = new THREE.MeshLambertMaterial({color: 0x444444});
+    game.supergunMaterial = new THREE.MeshNormalMaterial();
+
+    let gunGeometry = new THREE.BoxGeometry(0.5, 0.5, 3);
+    game.gunMesh = new THREE.Mesh(gunGeometry, game.supergunMaterial);
+    game.scene.add(game.gunMesh);
 
 }
 
@@ -383,11 +402,11 @@ function update(time) {
     deltaTime = time - prevTime;
     localInputState.prevInputs = localInputState.inputs;
 
-    localPlayerState.position.x = lerp(localPlayerState.position.x, localPlayerState.targetPosition.x, 0.5);
-    localPlayerState.position.y = lerp(localPlayerState.position.y, localPlayerState.targetPosition.y, 0.5);
-    localPlayerState.position.z = lerp(localPlayerState.position.z, localPlayerState.targetPosition.z, 0.5);
+    game.cameraPosition.x = lerp(game.cameraPosition.x, localPlayerState.position.x, 0.5);
+    game.cameraPosition.y = lerp(game.cameraPosition.y, localPlayerState.position.y, 0.5);
+    game.cameraPosition.z = lerp(game.cameraPosition.z, localPlayerState.position.z, 0.5);
 
-    let position = localPlayerState.position;
+    let position = game.cameraPosition;
     let rotation = localInputState.rotation;
 
     if (game.inGame) {
@@ -410,6 +429,17 @@ function update(time) {
         );
         $('#sensValue').text('Sensitivity (' + sens  + ')')
     }
+    let forward = {x: Math.sin(rotation.y) * Math.cos(rotation.x), y: Math.sin(rotation.x), z: Math.cos(rotation.y) * Math.cos(rotation.x)};
+    const xRot = Math.PI / 4;
+    const yRot = Math.PI / 4;
+    let gunTarget = {x: Math.sin(rotation.y - xRot), y: Math.sin(rotation.x - yRot), z: Math.cos(rotation.y - xRot)};
+    game.gunMesh.lookAt(position.x + forward.x * 20, position.y + 4 + forward.y * 20 + 8 * game.shotAnim, position.z + forward.z * 20);
+
+    game.shotAnim = lerp(game.shotAnim, 0, 0.2);
+
+    game.gunMesh.position.x = lerp(game.gunMesh.position.x, position.x + gunTarget.x, 0.8);
+    game.gunMesh.position.y = lerp(game.gunMesh.position.y, position.y + 4 + gunTarget.y, 0.8);
+    game.gunMesh.position.z = lerp(game.gunMesh.position.z, position.z + gunTarget.z, 0.8);
 
 }
 

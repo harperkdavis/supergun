@@ -1,6 +1,8 @@
 function processMovement(inputs, prevInputs, rotation, lps, map) {
 
-    const PLAYER_SPEED = 0.06, JUMP_HEIGHT = 0.35, GRAVITY = 0.006, SLOWDOWN = 1.3;
+    const PLAYER_SPEED = 0.06, JUMP_HEIGHT = 0.35, GRAVITY = 0.006, SLOWDOWN = 1.3, RECOIL = 0.5;
+
+    lps.slowdown = lerp(lps.slowdown, SLOWDOWN, 0.1);
 
     if (inputs.includes('KeyW')) {
         lps.velocity.x += Math.sin(rotation.y) * PLAYER_SPEED;
@@ -22,8 +24,26 @@ function processMovement(inputs, prevInputs, rotation, lps, map) {
         lps.velocity.y = JUMP_HEIGHT;
         lps.canJump = false;
     }
-    lps.velocity.x /= SLOWDOWN;
-    lps.velocity.z /= SLOWDOWN;
+    lps.velocity.x /= lps.slowdown;
+    lps.velocity.z /= lps.slowdown;
+
+    if (inputs.includes('Mouse0') && lps.shotCooldown <= 0) {
+        lps.velocity.y += -Math.sin(rotation.x) * RECOIL * 0.5 * (lps.hasSupergun ? 0.4 : 1.0);
+        lps.velocity.x += -Math.sin(rotation.y) * RECOIL * Math.cos(rotation.x) * (lps.hasSupergun ? 0.2 : 1.0);
+        lps.velocity.z += -Math.cos(rotation.y) * RECOIL * Math.cos(rotation.x) * (lps.hasSupergun ? 0.2 : 1.0);
+        lps.slowdown = 1;
+        lps.canJump = false;
+
+        if (lps.hasSupergun) {
+            lps.shotCooldown = 8;
+        } else {
+            lps.shotCooldown = 64;
+        }
+    }
+
+    if (lps.shotCooldown > 0) {
+        lps.shotCooldown -= 1;
+    }
 
     lps.velocity.y -= GRAVITY;
 
@@ -178,4 +198,8 @@ function calculateIntersection(x1,y1,x2,y2, x3,y3,x4,y4) {
 
 if (exports !== undefined) {
     exports.processMovement = processMovement;
+}
+
+function lerp(a, b, c){
+    return (1 - c) * a + c * b;
 }
