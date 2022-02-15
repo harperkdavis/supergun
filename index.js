@@ -378,7 +378,7 @@ function handleTick() {
               let pos = otherPlayer.playerState.position;
 
               let intersect = movement.interceptCircleLineSeg({
-                radius: 2,
+                radius: 2.5,
                 center: {x: pos.x, y: pos.z}
               }, {p1: {x: bulletStart.x, y: bulletStart.z}, p2: {x: bulletEnd.x, y: bulletEnd.z}});
 
@@ -389,10 +389,10 @@ function handleTick() {
 
                 let oneMinusAlong = (1 - along);
                 if (height >= pos.y - 1 && height <= pos.y + 3) {
-                  otherPlayer.health -= Math.floor(Math.max(60 * Math.pow(oneMinusAlong, (player.playerState.hasSupergun ? 1 : 2)), 0));
+                  otherPlayer.health -= Math.floor(Math.max(60 * Math.pow(oneMinusAlong, 1), 0));
                   otherPlayer.lastDamager = player.id;
                 } else if (height >= pos.y + 3.5 && height <= pos.y + 5) {
-                  otherPlayer.health -= Math.floor(Math.max(120 * Math.pow(oneMinusAlong, (player.playerState.hasSupergun ? 1 : 2)), 0));
+                  otherPlayer.health -= Math.floor(Math.max(120 * Math.pow(oneMinusAlong, 1), 0));
                   otherPlayer.lastDamager = player.id;
                 }
 
@@ -486,6 +486,7 @@ function handleTick() {
         if (player.hasJoinedGame && player.deathTimer <= 0) {
           player.playerState.hasSupergun = true;
           sendChat(player.username + ' received a fresh supergun', 0xeeff00);
+          break;
         }
       }
     }

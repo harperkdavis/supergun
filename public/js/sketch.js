@@ -131,8 +131,8 @@ socket.on("register_accept", (data) => {
 socket.on("player_add", (data) => {
     if (game.inGame) {
         data.added.forEach(player => {
-            let headGeometry = new THREE.BoxGeometry(1, 1, 1);
-            let bodyGeometry = new THREE.BoxGeometry(1.1, 3, 1.1);
+            let headGeometry = new THREE.BoxGeometry(1.4, 1.4, 1.4);
+            let bodyGeometry = new THREE.BoxGeometry(2, 3, 2);
 
             let headMaterial = game.playerHeadMaterial;
             let material = game.playerMaterial;
