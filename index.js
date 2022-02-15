@@ -378,7 +378,7 @@ function handleTick() {
               let pos = otherPlayer.playerState.position;
 
               let intersect = movement.interceptCircleLineSeg({
-                radius: 2.5,
+                radius: 3,
                 center: {x: pos.x, y: pos.z}
               }, {p1: {x: bulletStart.x, y: bulletStart.z}, p2: {x: bulletEnd.x, y: bulletEnd.z}});
 
@@ -388,10 +388,10 @@ function handleTick() {
                 let height = lerp(bulletStart.y, bulletEnd.y, along);
 
                 let oneMinusAlong = (1 - along);
-                if (height >= pos.y - 1 && height <= pos.y + 3) {
+                if (height >= pos.y - 2 && height <= pos.y + 3) {
                   otherPlayer.health -= Math.floor(Math.max(60 * Math.pow(oneMinusAlong, 1), 0));
                   otherPlayer.lastDamager = player.id;
-                } else if (height >= pos.y + 3.5 && height <= pos.y + 5) {
+                } else if (height >= pos.y + 3.5 && height <= pos.y + 6) {
                   otherPlayer.health -= Math.floor(Math.max(120 * Math.pow(oneMinusAlong, 1), 0));
                   otherPlayer.lastDamager = player.id;
                 }
