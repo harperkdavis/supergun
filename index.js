@@ -199,7 +199,7 @@ function execute(command, args, sender) {
     }
     return list;
   } else if (command === 'hi') {
-    return 'hi!';
+    return 'hello';
   } else if (command === '') {
     return 'no command';
   } else if (command === 'adminme') {
