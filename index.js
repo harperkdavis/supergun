@@ -372,7 +372,7 @@ function handleTick() {
         let rotation = player.inputState.rotation;
         let forward = {x: Math.sin(rotation.y) * Math.cos(rotation.x), y: Math.sin(rotation.x), z: Math.cos(rotation.y) * Math.cos(rotation.x)};
         let bulletStart = {x: position.x + forward.x, y: position.y + 4 + forward.y, z: position.z + forward.z};
-        let bulletEnd = {x: position.x + forward.x * 200, y: position.y + 4 + forward.y * 200, z: position.z + forward.z * 200};
+        let bulletEnd = {x: position.x + forward.x * 1000, y: position.y + 4 + forward.y * 1000, z: position.z + forward.z * 200};
 
         Object.keys(gameState.players).forEach(osid => {
           if (sid !== osid) {
@@ -392,10 +392,10 @@ function handleTick() {
 
                 let oneMinusAlong = (1 - along);
                 if (height >= pos.y - 2 && height <= pos.y + 3) {
-                  otherPlayer.health -= Math.floor(Math.max(60 * Math.pow(oneMinusAlong, 1), 0));
+                  otherPlayer.health -= Math.floor(Math.max(60 * Math.pow(oneMinusAlong, 1.2), 0));
                   otherPlayer.lastDamager = player.id;
                 } else if (height >= pos.y + 3.5 && height <= pos.y + 6) {
-                  otherPlayer.health -= Math.floor(Math.max(120 * Math.pow(oneMinusAlong, 1), 0));
+                  otherPlayer.health -= Math.floor(Math.max(120 * Math.pow(oneMinusAlong, 1.2), 0));
                   otherPlayer.lastDamager = player.id;
                 }
 
