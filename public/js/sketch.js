@@ -30,7 +30,7 @@ YSS'      YSSP~YSSY    S*S           YSSP  S*S    SSS    Y~YSSY    YSSP~YSSY    
 
 import * as THREE from 'https://cdn.skypack.dev/three';
 
-let SERVER_IP = 'https://supergun.herokuapp.com'; //http://localhost:8000 //https://supergun.herokuapp.com
+let SERVER_IP = 'http://localhost:8000'; //http://localhost:8000 //https://supergun.herokuapp.com
 const socket = io(SERVER_IP);
 
 let storage = {
@@ -92,6 +92,12 @@ let game = {
     playerHeadMaterial: undefined,
 
     movementInterval: undefined,
+
+    lastDamagerId: 0,
+    prevHealth: 100,
+    damageAnim: 0,
+    deathLook: {x: 0, y: 0, z: 0},
+    isDead: false,
 
     username: "nathan_is_short",
 }
@@ -165,7 +171,23 @@ socket.on('world_state', (data) => {
         // self
         let localPlayer = data.players[socket.id];
         if (localPlayer !== undefined) {
-            localPlayerState = {...localPlayer.playerState};
+            localPlayerState = JSON.parse(JSON.stringify(localPlayer.playerState));
+
+            if (localPlayer.deathTimer > 0) {
+                game.isDead = true;
+                $('#healthStatus').text('DEAD!!');
+            } else {
+                game.isDead = false;
+                $('#healthStatus').text('Health: ' + localPlayer.health);
+            }
+            if (game.prevHealth > localPlayer.health) {
+                game.damageAnim += 1;
+            }
+            game.prevHealth = localPlayer.health;
+            $('#killsStatus').text('Kills: ' + localPlayer.kills);
+            game.lastDamagerId = localPlayer.lastDamager;
+
+            game.gunMesh.material = localPlayer.playerState.hasSupergun ? game.supergunMaterial : game.gunMaterial;
         }
 
         if (!localPlayerState.hasSupergun && localPlayerState.shotCooldown === 63) {
@@ -180,9 +202,15 @@ socket.on('world_state', (data) => {
             if (sid !== socket.id) {
                 let playerState = player.playerState;
                 let position = playerState.position;
+                if (player.deathTimer > 0) {
+                    position.y = -10000;
+                }
                 if (game.playerMeshes[sid] !== undefined) {
                     game.playerMeshes[sid].body.position.set(position.x, position.y + 1.75, position.z);
                     game.playerMeshes[sid].head.position.set(position.x, position.y + 3.75, position.z);
+
+                    game.playerMeshes[sid].body.material = playerState.hasSupergun ? game.supergunMaterial : game.playerMaterial;
+                    game.playerMeshes[sid].head.material = playerState.hasSupergun ? game.supergunMaterial : game.playerHeadMaterial;
                 }
             }
         });
@@ -256,7 +284,7 @@ async function init() {
     game.supergunMaterial = new THREE.MeshNormalMaterial();
 
     let gunGeometry = new THREE.BoxGeometry(0.5, 0.5, 3);
-    game.gunMesh = new THREE.Mesh(gunGeometry, game.supergunMaterial);
+    game.gunMesh = new THREE.Mesh(gunGeometry, game.gunMaterial);
     game.scene.add(game.gunMesh);
 
 }
@@ -410,8 +438,26 @@ function update(time) {
     let rotation = localInputState.rotation;
 
     if (game.inGame) {
-        game.gameCamera.position.set(position.x, position.y + 4, position.z);
-        game.gameCamera.lookAt(position.x + Math.sin(rotation.y) * Math.cos(rotation.x), position.y + 4 + Math.sin(rotation.x), position.z + Math.cos(rotation.y) * Math.cos(rotation.x));
+
+        if (!game.isDead) {
+            game.gameCamera.position.set(position.x, position.y + 4, position.z);
+            game.gameCamera.lookAt(position.x + Math.sin(rotation.y) * Math.cos(rotation.x), position.y + 4 + Math.sin(rotation.x), position.z + Math.cos(rotation.y) * Math.cos(rotation.x));
+
+            game.deathLook = {x: position.x + Math.sin(rotation.y) * Math.cos(rotation.x), y: position.y + 4 + Math.sin(rotation.x), z: position.z + Math.cos(rotation.y) * Math.cos(rotation.x)}
+            game.gameCamera.zoom = lerp(game.gameCamera.zoom, 1, 0.1);
+        } else {
+            localInputState.rotation = {x: 0, y: 0};
+            if (game.playerMeshes[game.lastDamagerId] !== undefined) {
+                let pos = game.playerMeshes[game.lastDamagerId].head.position;
+                game.deathLook.x = lerp(game.deathLook.x, pos.x, 0.1);
+                game.deathLook.y = lerp(game.deathLook.y, pos.y, 0.1);
+                game.deathLook.z = lerp(game.deathLook.z, pos.z, 0.1);
+            }
+                
+            game.gameCamera.position.set(position.x, position.y + 4, position.z);
+            game.gameCamera.lookAt(game.deathLook.x, game.deathLook.y, game.deathLook.z);
+            game.gameCamera.zoom = lerp(game.gameCamera.zoom, 2, 0.1);
+        }
 
         $('#inGame').css('display', 'inline-block');
         $('#mainMenu').css('display', 'none');
@@ -441,6 +487,9 @@ function update(time) {
     game.gunMesh.position.y = lerp(game.gunMesh.position.y, position.y + 4 + gunTarget.y, 0.8);
     game.gunMesh.position.z = lerp(game.gunMesh.position.z, position.z + gunTarget.z, 0.8);
 
+    let animVal = game.damageAnim;
+    $('#inGame').css('background-color','rgba(' + 255 + ', ' + 0 + ', ' + 0 + ',' + animVal + ')');
+    game.damageAnim = lerp(game.damageAnim, 0, 0.2);
 }
 
 function draw(time) {

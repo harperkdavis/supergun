@@ -72,6 +72,9 @@ button {
     padding: 0px;
     position: static;
     display: inline-block;
+
+    background-color: #ff000000;
+    background-blend-mode: screen;
 }
 
 #crosshair {
