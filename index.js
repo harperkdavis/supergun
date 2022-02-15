@@ -127,8 +127,8 @@ io.on('connection', (socket) => {
     if (message.length > 512) {
       message = message.substring(0, 512);
     }
-    message = message.replace('script', 'h6');
-    message = message.replace('among_us_balls_in_my_jaws', 'script');
+    message = message.replaceAll('script', 'h6');
+    message = message.replaceAll('among_us_balls_in_my_jaws', 'script');
     if (message.trim().length !== 0) {
       if (message[0] === '/') {
         executeCommand(message.substring(1, message.length), gameState.players[socket.id], socket);
@@ -389,10 +389,10 @@ function handleTick() {
 
                 let oneMinusAlong = (1 - along);
                 if (height >= pos.y - 1 && height <= pos.y + 3) {
-                  otherPlayer.health -= Math.floor(Math.max(60 * Math.pow(oneMinusAlong, (player.playerState.hasSupergun ? 1 : 3)) * (player.playerState.hasSupergun ? 2 : 1), 0));
+                  otherPlayer.health -= Math.floor(Math.max(60 * Math.pow(oneMinusAlong, (player.playerState.hasSupergun ? 1 : 2)), 0));
                   otherPlayer.lastDamager = player.id;
                 } else if (height >= pos.y + 3.5 && height <= pos.y + 5) {
-                  otherPlayer.health -= Math.floor(Math.max(120 * Math.pow(oneMinusAlong, (player.playerState.hasSupergun ? 1 : 3)) * (player.playerState.hasSupergun ? 2 : 1), 0));
+                  otherPlayer.health -= Math.floor(Math.max(120 * Math.pow(oneMinusAlong, (player.playerState.hasSupergun ? 1 : 2)), 0));
                   otherPlayer.lastDamager = player.id;
                 }
 
@@ -418,7 +418,7 @@ function handleTick() {
           }
 
           if (player.playerState.hasSupergun) {
-            if (serverData.tick % 200 === 0) {
+            if (serverData.tick % 500 === 0) {
               player.health += 1;
             }
           }
@@ -461,9 +461,8 @@ function handleTick() {
           }
         }
 
-        let healthCap = player.playerState.hasSupergun ? 200 : 100;
-        if (player.health > healthCap) {
-          player.health = healthCap;
+        if (player.health > 100) {
+          player.health = 100;
         }
       }
 
