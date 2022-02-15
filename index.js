@@ -372,7 +372,7 @@ function handleTick() {
         let rotation = player.inputState.rotation;
         let forward = {x: Math.sin(rotation.y) * Math.cos(rotation.x), y: Math.sin(rotation.x), z: Math.cos(rotation.y) * Math.cos(rotation.x)};
         let bulletStart = {x: position.x + forward.x, y: position.y + 4 + forward.y, z: position.z + forward.z};
-        let bulletEnd = {x: position.x + forward.x * 1000, y: position.y + 4 + forward.y * 1000, z: position.z + forward.z * 200};
+        let bulletEnd = {x: position.x + forward.x * 1000, y: position.y + 4 + forward.y * 1000, z: position.z + forward.z * 1000};
 
         Object.keys(gameState.players).forEach(osid => {
           if (sid !== osid) {
