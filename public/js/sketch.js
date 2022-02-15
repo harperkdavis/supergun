@@ -190,7 +190,7 @@ socket.on('world_state', (data) => {
             game.gunMesh.material = localPlayer.playerState.hasSupergun ? game.supergunMaterial : game.gunMaterial;
         }
 
-        if (!localPlayerState.hasSupergun && localPlayerState.shotCooldown === 63) {
+        if (!localPlayerState.hasSupergun && localPlayerState.shotCooldown === 31) {
             game.shotAnim += 1;
         } else if (localPlayerState.hasSupergun && localPlayerState.shotCooldown === 7) {
             game.shotAnim += 1;

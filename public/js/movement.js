@@ -1,6 +1,6 @@
 function processMovement(inputs, prevInputs, rotation, lps, map) {
 
-    const PLAYER_SPEED = 0.06, JUMP_HEIGHT = 0.35, GRAVITY = 0.006, SLOWDOWN = 1.3, RECOIL = 0.5;
+    const PLAYER_SPEED = 0.06, JUMP_HEIGHT = 0.35, GRAVITY = 0.006, SLOWDOWN = 1.3, RECOIL = 0.2;
 
     lps.slowdown = lerp(lps.slowdown, SLOWDOWN, 0.1);
 
@@ -28,16 +28,16 @@ function processMovement(inputs, prevInputs, rotation, lps, map) {
     lps.velocity.z /= lps.slowdown;
 
     if (inputs.includes('Mouse0') && lps.shotCooldown <= 0) {
-        lps.velocity.y += -Math.sin(rotation.x) * RECOIL * 0.5 * (lps.hasSupergun ? 0.4 : 1.0);
-        lps.velocity.x += -Math.sin(rotation.y) * RECOIL * Math.cos(rotation.x) * (lps.hasSupergun ? 0.2 : 1.0);
-        lps.velocity.z += -Math.cos(rotation.y) * RECOIL * Math.cos(rotation.x) * (lps.hasSupergun ? 0.2 : 1.0);
+        lps.velocity.y += -Math.sin(rotation.x) * RECOIL * 0.5;
+        lps.velocity.x += -Math.sin(rotation.y) * RECOIL * Math.cos(rotation.x);
+        lps.velocity.z += -Math.cos(rotation.y) * RECOIL * Math.cos(rotation.x);
         lps.slowdown = 1;
         lps.canJump = false;
 
         if (lps.hasSupergun) {
             lps.shotCooldown = 8;
         } else {
-            lps.shotCooldown = 64;
+            lps.shotCooldown = 32;
         }
     }
 
