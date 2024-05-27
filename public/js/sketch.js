@@ -28,9 +28,9 @@ YSS'      YSSP~YSSY    S*S           YSSP  S*S    SSS    Y~YSSY    YSSP~YSSY    
             The multiplayer networking library (this may be quite useful)
 */
 
-import * as THREE from 'https://cdn.skypack.dev/three';
+import * as THREE from './three.module.min.js';
 
-let SERVER_IP = 'https://supergun.herokuapp.com'; //http://localhost:8000 //https://supergun.herokuapp.com
+let SERVER_IP = 'http://localhost:8000'; //https://supergun.herokuapp.com
 const socket = io(SERVER_IP);
 
 let storage = {

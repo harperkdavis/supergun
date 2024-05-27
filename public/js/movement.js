@@ -229,11 +229,12 @@ function interceptCircleLineSeg(circle, line){
     return ret;
 }
 
-
+try {
 if (exports !== undefined) {
     exports.processMovement = processMovement;
     exports.interceptCircleLineSeg = interceptCircleLineSeg;
 }
+} catch (e) {}
 
 function lerp(a, b, c){
     return (1 - c) * a + c * b;

@@ -29,7 +29,7 @@ const CONSOLE_USER = {
 }
 
 
-const server = app.listen(port, () => {
+const server = app.listen(port, '::', () => {
   let file = fs.readFileSync("maps/castle.json");
   serverData.map = JSON.parse(file.toString());
 

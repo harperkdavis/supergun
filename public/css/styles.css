@@ -2,6 +2,7 @@ body {
     padding: 0;
     margin: 0;
     font-family: 'Syne Mono', sans-serif;
+    overflow: hidden;
 }
 
 #ui {
