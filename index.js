@@ -1,15 +1,23 @@
 const express = require('express');
+const https = require('https');
+const httpsRedirect = require('express-https-redirect');
 const cors = require('cors');
 const fs = require('fs');
 const inquirer = require('inquirer');
 
 const app = express();
-const port = process.env.PORT || 8000;
+const port = process.env.SPORT || 8000;
 
+app.use('*', httpsRedirect(true));
 const movement = require('./public/js/movement.js');
 
 app.use(express.static('public'));
 app.use(cors({origin: true}));
+
+const httpsServer = https.createServer({
+  key: fs.readFileSync('./crt/supergun_hked_live.key'),
+  cert: fs.readFileSync('./crt/supergun_hked_live.crt')
+}, app);
 
 let gameState = {
   players: {}
@@ -29,7 +37,7 @@ const CONSOLE_USER = {
 }
 
 
-const server = app.listen(port, '::', () => {
+const server = httpsServer.listen(port, '::', () => {
   let file = fs.readFileSync("maps/castle.json");
   serverData.map = JSON.parse(file.toString());
 
@@ -50,6 +58,8 @@ const server = app.listen(port, '::', () => {
 
   readConsole();
 });
+
+console.log(server);
 
 const socket = require('socket.io');
 const io = socket(server, { cors: {
